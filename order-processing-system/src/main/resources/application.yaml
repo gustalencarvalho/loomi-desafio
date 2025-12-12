@@ -1,0 +1,42 @@
+spring:
+  application:
+    name: order-processing-system
+
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:orders_db}
+    username: ${DB_USER:postgres}
+    password: ${DB_PASSWORD:postgres}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    consumer:
+      group-id: order-processing-group
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: "*"
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+    order:
+      topic: order-events
+
+server:
+  port: ${SERVER_PORT:8080}
+
+app:
+  product-catalog:
+    url: ${PRODUCT_CATALOG_URL:http://localhost:8081}
+  order:
+    high-value-threshold: 10000
+    fraud-check-threshold: 20000
+    subscription-limit: 5
+    corporate-approval-threshold: 50000
+    corporate-volume-discount-threshold: 100
