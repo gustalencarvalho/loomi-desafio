@@ -1,5 +1,6 @@
 package com.ecommerce.order_processing_system.kafka;
 
+import com.ecommerce.order_processing_system.kafka.events.LowStockAlertEvent;
 import com.ecommerce.order_processing_system.kafka.events.OrderCreatedEvent;
 import com.ecommerce.order_processing_system.kafka.events.OrderFailedEvent;
 import com.ecommerce.order_processing_system.kafka.events.OrderProcessedEvent;
@@ -24,6 +25,11 @@ public class OrderCreatedEventDispatcher {
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void publishProcessed(OrderProcessedEvent event) {
         kafkaPublisher.publishProcessed(event);
+    }
+
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void publishLowStockAlert(LowStockAlertEvent event) {
+        kafkaPublisher.publishLowStockAlert(event);
     }
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
