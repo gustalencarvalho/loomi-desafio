@@ -7,7 +7,7 @@ import com.ecommerce.order_processing_system.dto.CreateOrderItemRequest;
 import com.ecommerce.order_processing_system.dto.CreateOrderRequest;
 import com.ecommerce.order_processing_system.dto.OrderItemResponse;
 import com.ecommerce.order_processing_system.dto.OrderResponse;
-import com.ecommerce.order_processing_system.events.OrderCreatedEvent;
+import com.ecommerce.order_processing_system.kafka.events.OrderCreatedEvent;
 import com.ecommerce.order_processing_system.exception.ErrorSystemException;
 import com.ecommerce.order_processing_system.exception.OrderNotFoundException;
 import com.ecommerce.order_processing_system.exception.QuantityInvalidException;

@@ -2,6 +2,9 @@ package com.ecommerce.order_processing_system.domain;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
+
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -22,6 +25,7 @@ public class Order {
     private String customerId;
 
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JdbcTypeCode(SqlTypes.ARRAY)
     private List<OrderItem> items;
 
     private BigDecimal totalAmount;

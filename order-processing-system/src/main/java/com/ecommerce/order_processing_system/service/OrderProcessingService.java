@@ -3,9 +3,11 @@ package com.ecommerce.order_processing_system.service;
 import com.ecommerce.order_processing_system.domain.Order;
 import com.ecommerce.order_processing_system.domain.OrderStatus;
 import com.ecommerce.order_processing_system.dto.ProductDTO;
-import com.ecommerce.order_processing_system.events.OrderFailedEvent;
-import com.ecommerce.order_processing_system.events.OrderProcessedEvent;
-import com.ecommerce.order_processing_system.kafka.KafkaEventPublisher;
+import com.ecommerce.order_processing_system.exception.OrderNotFoundException;
+import com.ecommerce.order_processing_system.exception.OutOfStockException;
+import com.ecommerce.order_processing_system.exception.WarehouseUnavailableException;
+import com.ecommerce.order_processing_system.kafka.events.OrderFailedEvent;
+import com.ecommerce.order_processing_system.kafka.events.OrderProcessedEvent;
 import com.ecommerce.order_processing_system.repository.OrderRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -16,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.Random;
 
@@ -40,6 +43,8 @@ public class OrderProcessingService {
     @Value("${app.order.corporate-approval-threshold}")
     private BigDecimal corporateApprovalThreshold;
 
+    private static final Integer LIMIT_STOCK = 5;
+
     @Transactional
     public void process(String orderId) {
 
@@ -48,7 +53,7 @@ public class OrderProcessingService {
         Order order = repository.findById(orderId)
                 .orElseThrow(() -> {
                     log.error("Order {} not found during processing", orderId);
-                    return new IllegalArgumentException("Order " + orderId + " not found");
+                    return new OrderNotFoundException("Order " + orderId + " not found");
                 });
 
         log.debug("Loaded order: {}", order);
@@ -136,14 +141,38 @@ public class OrderProcessingService {
         }
     }
 
-    private void validatePhysical(Order order, ProductDTO product, int qty) {
-        log.debug("Validating PHYSICAL item: productId={}, qty={}, stock={}",
-                product.getProductId(), qty, product.getStockQuantity());
+    private void validatePhysical(Order order, ProductDTO product, int quantity) {
+        log.debug("Validating PHYSICAL item: productId={}, quantity={}, stock={}",
+                product.getProductId(), quantity, product.getStockQuantity());
 
-        if (product.getStockQuantity() == null || product.getStockQuantity() < qty) {
-            log.error("OUT_OF_STOCK detected for productId={} in orderId={}", product.getProductId(), order.getOrderId());
-            throw new RuntimeException("OUT_OF_STOCK");
+        if (product == null) {
+            log.error("Cannot reserve inventory for null product");
+            throw new WarehouseUnavailableException("WAREHOUSE_UNAVAILABLE: Cannot reserve inventory");
         }
+
+        if (product.getStockQuantity() == null || quantity > product.getStockQuantity()) {
+            log.error("OUT_OF_STOCK detected for productId={} in orderId={}", product.getProductId(),
+                    order.getOrderId());
+            throw new OutOfStockException("OUT_OF_STOCK: Requested quantity= " + quantity + ", Available stock= "
+                    + product.getStockQuantity());
+        }
+
+        if (product.getStockQuantity() < LIMIT_STOCK) {
+            log.warn("Low stock detected {} ", product.getStockQuantity());
+        }
+
+        int newStock = product.getStockQuantity() - quantity;
+        boolean reserved = productService.updateStock(product.getProductId(), newStock);
+
+        if (!reserved) {
+            throw new OutOfStockException("Not enough stock for productId=" + product.getProductId());
+        }
+
+        log.info("Quantity stock now after reserve {} ", newStock);
+
+        LocalDateTime deliveryDate = calculateDeliveryDate(order, product);
+        log.info("Delivery scheduled: productId={}, deliveryDate={}",
+                product.getProductId(), deliveryDate);
     }
 
     private void validateSubscription(Order order, ProductDTO product) {
@@ -179,8 +208,6 @@ public class OrderProcessingService {
         }
     }
 
-
-
     private void validateCorporate(Order order, ProductDTO product, int qty) {
         log.debug("Validating CORPORATE productId={} for orderId={} qty={}", product.getProductId(), order.getOrderId(), qty);
 
@@ -188,5 +215,23 @@ public class OrderProcessingService {
             log.error("CREDIT_LIMIT_EXCEEDED for orderId={}", order.getOrderId());
             throw new RuntimeException("CREDIT_LIMIT_EXCEEDED");
         }
+    }
+
+    private LocalDateTime calculateDeliveryDate(Order order, ProductDTO product) {
+        log.debug("Calculating delivery date for productId={}", product.getProductId());
+
+        int deliveryDays = new Random().nextInt(6) + 5;
+
+        LocalDateTime createdAt = order.getCreatedAt();
+        if (createdAt == null) {
+            createdAt = LocalDateTime.now();
+        }
+
+        LocalDateTime deliveryDate = createdAt.plusDays(deliveryDays);
+
+        log.debug("Calculated delivery date: {} (in {} days from order creation)",
+                deliveryDate, deliveryDays);
+
+        return deliveryDate;
     }
 }
