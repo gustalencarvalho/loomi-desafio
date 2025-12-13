@@ -55,7 +55,7 @@ public class GlobalExceptionHandler {
     ProblemDetail handleProductIsNotAvailableException(final ProductIsNotAvailableException ex, final HttpServletRequest request) {
         ProblemDetail problem = ProblemDetail.forStatus(HttpStatus.BAD_REQUEST);
         problem.setType(URI.create(request.getContextPath()));
-        problem.setTitle("Product");
+        problem.setTitle("Product available");
         problem.setDetail(ex.getMessage());
         problem.setProperty("timestamp", Instant.now());
         return problem;
@@ -76,6 +76,26 @@ public class GlobalExceptionHandler {
         ProblemDetail problem = ProblemDetail.forStatus(HttpStatus.INTERNAL_SERVER_ERROR);
         problem.setType(URI.create(request.getContextPath()));
         problem.setTitle("Error system");
+        problem.setDetail(ex.getMessage());
+        problem.setProperty("timestamp", Instant.now());
+        return problem;
+    }
+
+    @ExceptionHandler(OutOfStockException.class)
+    ProblemDetail handleOutOfStockExpcetion(final OutOfStockException ex, final HttpServletRequest request) {
+        ProblemDetail problem = ProblemDetail.forStatus(HttpStatus.BAD_REQUEST);
+        problem.setType(URI.create(request.getContextPath()));
+        problem.setTitle("Product Stock");
+        problem.setDetail(ex.getMessage());
+        problem.setProperty("timestamp", Instant.now());
+        return problem;
+    }
+
+    @ExceptionHandler(WarehouseUnavailableException.class)
+    ProblemDetail handleWareHouseUnaivalableException(final WarehouseUnavailableException ex, final HttpServletRequest request) {
+        ProblemDetail problem = ProblemDetail.forStatus(HttpStatus.INTERNAL_SERVER_ERROR);
+        problem.setType(URI.create(request.getContextPath()));
+        problem.setTitle("Product");
         problem.setDetail(ex.getMessage());
         problem.setProperty("timestamp", Instant.now());
         return problem;

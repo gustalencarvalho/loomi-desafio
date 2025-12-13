@@ -1,9 +1,12 @@
 package com.ecommerce.order_processing_system.domain;
 
-import com.vladmihalcea.hibernate.type.json.JsonType;
 import jakarta.persistence.*;
-import lombok.*;
-import org.hibernate.annotations.Type;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.math.BigDecimal;
 import java.util.Map;
@@ -34,7 +37,7 @@ public class OrderItem {
     private BigDecimal price;
     private BigDecimal subtotal;
 
-    @Type(JsonType.class)
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "jsonb")
     private Map<String, Object> metadata;
 
