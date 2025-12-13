@@ -1,0 +1,43 @@
+spring:
+  config:
+    activate:
+      on-profile: dev
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/product_catalog_db
+    username: product_catalog_db
+    password: 15421542
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+
+  kafka:
+    producer:
+      bootstrap-servers: localhost:9092
+    consumer:
+      bootstrap-servers: localhost:9092
+
+server:
+  port: 8081
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: always
+      db:
+        enabled: true
+      kafka:
+        enabled: true
+
+logging:
+  level:
+    root: DEBUG
+    com.loomi.product_catalog_service: DEBUG
+    org.springframework: INFO
+    org.hibernate: INFO
