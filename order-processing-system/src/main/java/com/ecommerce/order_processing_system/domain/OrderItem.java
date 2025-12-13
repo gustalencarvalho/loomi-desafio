@@ -1,16 +1,19 @@
 package com.ecommerce.order_processing_system.domain;
 
+import com.vladmihalcea.hibernate.type.json.JsonType;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.Type;
 
 import java.math.BigDecimal;
+import java.util.Map;
 
+@Data
 @Entity
-@Table(name = "order_items")
-@Getter @Setter
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
+@Table(name = "order_items")
 public class OrderItem {
 
     @Id
@@ -31,6 +34,8 @@ public class OrderItem {
     private BigDecimal price;
     private BigDecimal subtotal;
 
+    @Type(JsonType.class)
     @Column(columnDefinition = "jsonb")
-    private String metadata;
+    private Map<String, Object> metadata;
+
 }
