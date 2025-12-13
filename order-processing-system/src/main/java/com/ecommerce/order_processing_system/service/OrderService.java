@@ -41,7 +41,6 @@ public class OrderService {
         List<OrderItem> items = request.getItems().stream()
                 .map(this::toOrderItem)
                 .collect(Collectors.toList());
-        log.debug("Converted {} items into OrderItem entities", items.size());
 
         BigDecimal total = items.stream()
                 .map(OrderItem::getSubtotal)
@@ -116,15 +115,8 @@ public class OrderService {
                 orderItemRequest.getProductId(),
                 orderItemRequest.getQuantity());
 
-        if (orderItemRequest.getQuantity() <= 0) {
-            log.warn("Invalid quantity={} for productId={}",
-                    orderItemRequest.getQuantity(),
-                    orderItemRequest.getProductId());
-            throw new QuantityInvalidException("Quantity must be positive");
-        }
-
         var product = productService.getProductOrThrow(orderItemRequest.getProductId());
-        log.debug("Fetched product productId={} price={} stock={}",
+        log.debug("Found product productId={} price={} stock={}",
                 product.getProductId(), product.getPrice(), product.getStockQuantity());
 
         BigDecimal subtotal = product.getPrice()

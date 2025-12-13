@@ -41,6 +41,9 @@ public class OrderProcessingService {
     @Value("${app.order.subscription-limit}")
     private Integer subscriptionLimit;
 
+    @Value("${app.order.stock-zero}")
+    private Integer stockZero;
+
     @Value("${app.order.alert-stock-low}")
     private Integer alertSotckLow;
 
@@ -115,11 +118,8 @@ public class OrderProcessingService {
 
         } catch (RuntimeException e) {
             log.error("Order processing FAILED for orderId={}, reason={}", orderId, e.getMessage());
-
             order.setStatus(OrderStatus.FAILED);
             order.setFailureReason(e.getMessage());
-
-            log.warn("Publishing OrderFailedEvent for orderId={}", orderId);
             eventPublisher.publishEvent(OrderFailedEvent.of(orderId, e.getMessage()));
         }
     }
@@ -136,7 +136,6 @@ public class OrderProcessingService {
 
             if (new Random().nextDouble() < 0.05) {
                 log.error("Fraud check FAILED for orderId={}", order.getOrderId());
-                throw new RuntimeException("FraudAlert: possible fraud detected");
             }
 
             log.debug("Fraud check passed for orderId={}", order.getOrderId());
@@ -150,6 +149,14 @@ public class OrderProcessingService {
         if (product == null) {
             log.error("Cannot reserve inventory for null product");
             throw new WarehouseUnavailableException("Cannot reserve inventory");
+        }
+
+        if (product.getStockQuantity() == stockZero) {
+            throw new OutOfStockException("No stock at the moment");
+        }
+
+        if (!product.getActive()) {
+            eventPublisher.publishEvent(OrderFailedEvent.of(order.getOrderId(),"OUT_OF_STOCK"));
         }
 
         if (product.getStockQuantity() == null || quantity > product.getStockQuantity()) {
@@ -177,14 +184,11 @@ public class OrderProcessingService {
         }
 
         log.info("Quantity stock now after reserve {} ", newStock);
-
+        paymentCarriedOut(order.getTotalAmount());
         LocalDateTime deliveryDate = calculateDeliveryDate(order, product);
-        log.info("Delivery scheduled: productId={}, deliveryDate={}",
-                product.getProductId(), deliveryDate);
     }
 
     private void validateSubscription(Order order, ProductDTO product) {
-
         log.debug("Validating SUBSCRIPTION productId={} for orderId={}", product.getProductId(), order.getOrderId());
     }
 
@@ -242,5 +246,9 @@ public class OrderProcessingService {
                 deliveryDate, deliveryDays);
 
         return deliveryDate;
+    }
+
+    public void paymentCarriedOut(BigDecimal totalAmount) {
+        log.info("Payment carried out successfully total={}", totalAmount);
     }
 }
