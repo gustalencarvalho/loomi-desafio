@@ -11,20 +11,27 @@ help:
 	@echo "  make logs        - View application logs"
 	@echo "  make db-migrate  - Run database migrations"
 
-setup:
+build:
+
+	cd order-processing-system && mvn clean install
+
+
+	cd product-catalog-service && mvn clean install
+
+
 	docker-compose build
 
-build:
-	cd order-processing-system && mvn clean install
+
+	docker-compose up -d
+
+
+	@echo "Waiting for services to be ready..."
+	sleep 10
+
+	@echo "Services are up. Application running on http://localhost:8080"
 
 test:
 	cd order-processing-system && mvn clean test
-
-up:
-	docker-compose up -d
-	@echo "Waiting for services to be ready..."
-	sleep 10
-	@echo "Services are up. Application running on http://localhost:8080"
 
 down:
 	docker-compose down
@@ -34,7 +41,7 @@ clean:
 	mvn clean
 
 logs:
-	docker-compose logs -f order-processing-system
+	docker logs -f order-service
 
 db-migrate:
 	@echo "Migrations handled automatically by Hibernate"
