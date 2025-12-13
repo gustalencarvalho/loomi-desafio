@@ -1,5 +1,6 @@
 package com.ecommerce.order_processing_system.kafka;
 
+import com.ecommerce.order_processing_system.kafka.events.LowStockAlertEvent;
 import com.ecommerce.order_processing_system.kafka.events.OrderCreatedEvent;
 import com.ecommerce.order_processing_system.kafka.events.OrderFailedEvent;
 import com.ecommerce.order_processing_system.kafka.events.OrderProcessedEvent;
@@ -20,6 +21,9 @@ public class KafkaEventPublisher {
     @Value("${app.order.topic.processed}")
     private String topicProcessed;
 
+    @Value("${app.order.topic.low-stock}")
+    private String topicLowStock;
+
     @Value("${app.order.topic.failed}")
     private String topicFailed;
 
@@ -35,6 +39,12 @@ public class KafkaEventPublisher {
         log.info("Publishing OrderProcessedEvent for orderId={} to topic={}",  event.getPayload().getOrderId(), topicProcessed);
         log.debug("OrderProcessedEvent payload={}", event);
         kafkaTemplate.send(topicProcessed, event.getPayload().getOrderId(), event);
+    }
+
+    public void publishLowStockAlert(LowStockAlertEvent event) {
+        log.info("Publishing LowStockAlert for productId={} to topic={}",  event.getPayload().getProductId(), topicLowStock);
+        log.debug("LowStockAlertEvent payload={}", event);
+        kafkaTemplate.send(topicLowStock, event.getPayload().getProductId(), event);
     }
 
     public void publishFailed(OrderFailedEvent event) {

@@ -8,7 +8,7 @@ import com.ecommerce.order_processing_system.dto.CreateOrderRequest;
 import com.ecommerce.order_processing_system.dto.OrderItemResponse;
 import com.ecommerce.order_processing_system.dto.OrderResponse;
 import com.ecommerce.order_processing_system.kafka.events.OrderCreatedEvent;
-import com.ecommerce.order_processing_system.exception.ErrorSystemException;
+import com.ecommerce.order_processing_system.exception.ErrorSystemDefaultException;
 import com.ecommerce.order_processing_system.exception.OrderNotFoundException;
 import com.ecommerce.order_processing_system.exception.QuantityInvalidException;
 import com.ecommerce.order_processing_system.repository.OrderRepository;
@@ -177,7 +177,7 @@ public class OrderService {
             try {
                 metadataJson = objectMapper.writeValueAsString(orderItem.getMetadata());
             } catch (Exception e) {
-                throw new ErrorSystemException(e.getMessage());
+                throw new ErrorSystemDefaultException(e.getMessage());
             }
         }
         return OrderItemResponse.builder()

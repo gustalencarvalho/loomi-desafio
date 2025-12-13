@@ -33,6 +33,7 @@ app:
   product-catalog:
     url: ${PRODUCT_CATALOG_URL:http://localhost:8081}
   order:
+    alert-stock-low: 5
     high-value-threshold: 10000
     fraud-check-threshold: 20000
     subscription-limit: 5
@@ -42,6 +43,7 @@ app:
       created: order-events-created
       processed: order-events-processed
       failed: order-events-failed
+      low-stock: order-events-low-stock
 
 logging:
   level:

@@ -6,6 +6,7 @@ import com.ecommerce.order_processing_system.dto.ProductDTO;
 import com.ecommerce.order_processing_system.exception.OrderNotFoundException;
 import com.ecommerce.order_processing_system.exception.OutOfStockException;
 import com.ecommerce.order_processing_system.exception.WarehouseUnavailableException;
+import com.ecommerce.order_processing_system.kafka.events.LowStockAlertEvent;
 import com.ecommerce.order_processing_system.kafka.events.OrderFailedEvent;
 import com.ecommerce.order_processing_system.kafka.events.OrderProcessedEvent;
 import com.ecommerce.order_processing_system.repository.OrderRepository;
@@ -40,10 +41,11 @@ public class OrderProcessingService {
     @Value("${app.order.subscription-limit}")
     private Integer subscriptionLimit;
 
+    @Value("${app.order.alert-stock-low}")
+    private Integer alertSotckLow;
+
     @Value("${app.order.corporate-approval-threshold}")
     private BigDecimal corporateApprovalThreshold;
-
-    private static final Integer LIMIT_STOCK = 5;
 
     @Transactional
     public void process(String orderId) {
@@ -147,18 +149,14 @@ public class OrderProcessingService {
 
         if (product == null) {
             log.error("Cannot reserve inventory for null product");
-            throw new WarehouseUnavailableException("WAREHOUSE_UNAVAILABLE: Cannot reserve inventory");
+            throw new WarehouseUnavailableException("Cannot reserve inventory");
         }
 
         if (product.getStockQuantity() == null || quantity > product.getStockQuantity()) {
             log.error("OUT_OF_STOCK detected for productId={} in orderId={}", product.getProductId(),
                     order.getOrderId());
-            throw new OutOfStockException("OUT_OF_STOCK: Requested quantity= " + quantity + ", Available stock= "
+            throw new OutOfStockException("Requested quantity= " + quantity + ", Available stock= "
                     + product.getStockQuantity());
-        }
-
-        if (product.getStockQuantity() < LIMIT_STOCK) {
-            log.warn("Low stock detected {} ", product.getStockQuantity());
         }
 
         int newStock = product.getStockQuantity() - quantity;
@@ -166,6 +164,16 @@ public class OrderProcessingService {
 
         if (!reserved) {
             throw new OutOfStockException("Not enough stock for productId=" + product.getProductId());
+        }
+
+        if (product.getStockQuantity() < alertSotckLow) {
+            log.warn("Low stock detected {} ", product.getStockQuantity());
+            LowStockAlertEvent lowStockAlertEvent = LowStockAlertEvent.create(
+                    order.getOrderId(),
+                    product.getProductId(),
+                    newStock
+            );
+            eventPublisher.publishEvent(lowStockAlertEvent);
         }
 
         log.info("Quantity stock now after reserve {} ", newStock);
@@ -176,6 +184,7 @@ public class OrderProcessingService {
     }
 
     private void validateSubscription(Order order, ProductDTO product) {
+
         log.debug("Validating SUBSCRIPTION productId={} for orderId={}", product.getProductId(), order.getOrderId());
     }
 
