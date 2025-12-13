@@ -1,16 +1,13 @@
 package com.ecommerce.order_processing_system.kafka;
 
-import com.ecommerce.order_processing_system.events.OrderCreatedEvent;
-import com.ecommerce.order_processing_system.events.OrderFailedEvent;
-import com.ecommerce.order_processing_system.events.OrderProcessedEvent;
+import com.ecommerce.order_processing_system.kafka.events.OrderCreatedEvent;
+import com.ecommerce.order_processing_system.kafka.events.OrderFailedEvent;
+import com.ecommerce.order_processing_system.kafka.events.OrderProcessedEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.event.TransactionalEventListener;
-
-import static org.springframework.transaction.event.TransactionPhase.AFTER_COMMIT;
 
 @Slf4j
 @Service

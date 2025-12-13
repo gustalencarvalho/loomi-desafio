@@ -1,8 +1,8 @@
 package com.ecommerce.order_processing_system.kafka;
 
-import com.ecommerce.order_processing_system.events.OrderCreatedEvent;
-import com.ecommerce.order_processing_system.events.OrderFailedEvent;
-import com.ecommerce.order_processing_system.events.OrderProcessedEvent;
+import com.ecommerce.order_processing_system.kafka.events.OrderCreatedEvent;
+import com.ecommerce.order_processing_system.kafka.events.OrderFailedEvent;
+import com.ecommerce.order_processing_system.kafka.events.OrderProcessedEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;

@@ -1,6 +1,6 @@
 package com.ecommerce.order_processing_system.config;
 
-import com.ecommerce.order_processing_system.events.OrderCreatedEvent;
+import com.ecommerce.order_processing_system.kafka.events.OrderCreatedEvent;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.springframework.beans.factory.annotation.Value;
