@@ -1,6 +1,7 @@
 package com.loomi.product_catalog_service.application;
 
 import com.loomi.product_catalog_service.api.dto.ProductDto;
+import com.loomi.product_catalog_service.domain.Product;
 import com.loomi.product_catalog_service.domain.exeception.ProductNotFoundException;
 import com.loomi.product_catalog_service.infrastructure.ProductRepository;
 import com.loomi.product_catalog_service.infrastructure.mapper.ProductMapper;
@@ -25,6 +26,22 @@ public class ProductService {
                 .orElseThrow(() -> new ProductNotFoundException(
                         "Product " + productId + " not found"
                 ));
+    }
+
+    @Transactional
+    public boolean reserveStock(String productId, int quantity) {
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new ProductNotFoundException(
+                        "Product " + productId + " not found"
+                ));
+
+        if (product.getStockQuantity() < quantity) {
+            return false;
+        }
+
+        product.setStockQuantity(quantity);
+        productRepository.save(product);
+        return true;
     }
 
 }

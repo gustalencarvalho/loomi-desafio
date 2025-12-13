@@ -23,4 +23,8 @@ public class ProductService {
         }
         return dto;
     }
+
+    public boolean updateStock(String productId, int quantity) {
+        return client.updateStock(productId, quantity);
+    }
 }
