@@ -1,9 +1,6 @@
 package com.ecommerce.order_processing_system.kafka;
 
-import com.ecommerce.order_processing_system.kafka.events.LowStockAlertEvent;
-import com.ecommerce.order_processing_system.kafka.events.OrderCreatedEvent;
-import com.ecommerce.order_processing_system.kafka.events.OrderFailedEvent;
-import com.ecommerce.order_processing_system.kafka.events.OrderProcessedEvent;
+import com.ecommerce.order_processing_system.kafka.events.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -24,6 +21,12 @@ public class KafkaEventPublisher {
     @Value("${app.order.topic.low-stock}")
     private String topicLowStock;
 
+    @Value("${app.order.topic.fraud-alert}")
+    private String topicFraudAlert;
+
+    @Value("${app.order.topic.scheguling-payment}")
+    private String topicSchedulingPayment;
+
     @Value("${app.order.topic.failed}")
     private String topicFailed;
 
@@ -42,9 +45,21 @@ public class KafkaEventPublisher {
     }
 
     public void publishLowStockAlert(LowStockAlertEvent event) {
-        log.info("Publishing LowStockAlert for productId={} to topic={}",  event.getPayload().getProductId(), topicLowStock);
+        log.info("Publishing LowStockAlertEvent for productId={} to topic={}",  event.getPayload().getProductId(), topicLowStock);
         log.debug("LowStockAlertEvent payload={}", event);
         kafkaTemplate.send(topicLowStock, event.getPayload().getProductId(), event);
+    }
+
+    public void publishFraudAlert(OrderFraudEvent event) {
+        log.info("Publishing OrderFraudEvent for orderId={} to topic={}",  event.getPayload().getOrderId(), topicFraudAlert);
+        log.debug("OrderFraudEvent payload={}", event);
+        kafkaTemplate.send(topicFraudAlert, event.getPayload().getOrderId(), event);
+    }
+
+    public void publishSchedulingPayment(OrderSchedulingPaymentEvent event) {
+        log.info("Publishing FraudAlert for orderId={} to topic={}",  event.getPayload().getOrderId(), topicSchedulingPayment);
+        log.debug("OrderSchedulingPaymentEvent payload={}", event);
+        kafkaTemplate.send(topicSchedulingPayment, event.getPayload().getOrderId(), event);
     }
 
     public void publishFailed(OrderFailedEvent event) {
