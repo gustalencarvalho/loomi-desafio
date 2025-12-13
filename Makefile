@@ -15,10 +15,10 @@ setup:
 	docker-compose build
 
 build:
-	mvn clean package -DskipTests
+	cd order-processing-system && mvn clean install
 
 test:
-	mvn clean test
+	cd order-processing-system && mvn clean test
 
 up:
 	docker-compose up -d
