@@ -1,7 +1,7 @@
 package com.ecommerce.order_processing_system.kafka;
 
-import com.ecommerce.order_processing_system.events.OrderCreatedEvent;
-import com.ecommerce.order_processing_system.events.OrderProcessedEvent;
+import com.ecommerce.order_processing_system.kafka.events.OrderCreatedEvent;
+import com.ecommerce.order_processing_system.kafka.events.OrderProcessedEvent;
 import com.ecommerce.order_processing_system.service.OrderProcessingService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

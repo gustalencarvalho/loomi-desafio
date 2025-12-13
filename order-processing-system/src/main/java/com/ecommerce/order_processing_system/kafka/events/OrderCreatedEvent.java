@@ -1,4 +1,4 @@
-package com.ecommerce.order_processing_system.events;
+package com.ecommerce.order_processing_system.kafka.events;
 
 import com.ecommerce.order_processing_system.dto.OrderItemResponse;
 import lombok.*;
