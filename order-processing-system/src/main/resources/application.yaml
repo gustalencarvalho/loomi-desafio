@@ -37,6 +37,7 @@ app:
     high-value-threshold: 10000
     fraud-check-threshold: 20000
     subscription-limit: 5
+    stock-zero: 0
     corporate-approval-threshold: 50000
     corporate-volume-discount-threshold: 100
     topic:

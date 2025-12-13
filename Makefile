@@ -12,22 +12,12 @@ help:
 	@echo "  make db-migrate  - Run database migrations"
 
 build:
-
 	cd order-processing-system && mvn clean install
-
-
 	cd product-catalog-service && mvn clean install
-
-
 	docker-compose build
-
-
 	docker-compose up -d
-
-
 	@echo "Waiting for services to be ready..."
 	sleep 10
-
 	@echo "Services are up. Application running on http://localhost:8080"
 
 test:

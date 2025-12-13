@@ -4,6 +4,8 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -14,7 +16,7 @@ import java.util.UUID;
 public class LowStockAlertEvent {
     private String eventId;
     private String eventType;
-    private LocalDateTime timestamp;
+    private String timestamp;
     private LowStockAlertPayload payload;
 
     @Data
@@ -31,7 +33,7 @@ public class LowStockAlertEvent {
         return LowStockAlertEvent.builder()
                 .eventId(UUID.randomUUID().toString())
                 .eventType("LOW_STOCK_ALERT")
-                .timestamp(LocalDateTime.now())
+                .timestamp(Instant.now().toString())
                 .payload(LowStockAlertPayload.builder()
                         .orderId(orderId)
                         .productId(productId)
