@@ -1,9 +1,6 @@
 package com.ecommerce.order_processing_system.kafka;
 
-import com.ecommerce.order_processing_system.kafka.events.LowStockAlertEvent;
-import com.ecommerce.order_processing_system.kafka.events.OrderCreatedEvent;
-import com.ecommerce.order_processing_system.kafka.events.OrderFailedEvent;
-import com.ecommerce.order_processing_system.kafka.events.OrderProcessedEvent;
+import com.ecommerce.order_processing_system.kafka.events.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -30,6 +27,16 @@ public class OrderCreatedEventDispatcher {
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void publishLowStockAlert(LowStockAlertEvent event) {
         kafkaPublisher.publishLowStockAlert(event);
+    }
+
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void publishLowStockAlert(OrderFraudEvent event) {
+        kafkaPublisher.publishFraudAlert(event);
+    }
+
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void publishSchedulingPayment(OrderSchedulingPaymentEvent event) {
+        kafkaPublisher.publishSchedulingPayment(event);
     }
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)

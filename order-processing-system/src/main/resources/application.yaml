@@ -45,6 +45,8 @@ app:
       processed: order-events-processed
       failed: order-events-failed
       low-stock: order-events-low-stock
+      fraud-alert: order-events-fraud-alert
+      scheguling-payment: order-events-scheguling-payment
 
 logging:
   level:

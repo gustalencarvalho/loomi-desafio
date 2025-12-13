@@ -7,10 +7,10 @@ import com.ecommerce.order_processing_system.dto.CreateOrderItemRequest;
 import com.ecommerce.order_processing_system.dto.CreateOrderRequest;
 import com.ecommerce.order_processing_system.dto.OrderItemResponse;
 import com.ecommerce.order_processing_system.dto.OrderResponse;
-import com.ecommerce.order_processing_system.kafka.events.OrderCreatedEvent;
 import com.ecommerce.order_processing_system.exception.ErrorSystemDefaultException;
 import com.ecommerce.order_processing_system.exception.OrderNotFoundException;
-import com.ecommerce.order_processing_system.exception.QuantityInvalidException;
+import com.ecommerce.order_processing_system.exception.OutOfStockException;
+import com.ecommerce.order_processing_system.kafka.events.OrderCreatedEvent;
 import com.ecommerce.order_processing_system.repository.OrderRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -119,6 +119,13 @@ public class OrderService {
         log.debug("Found product productId={} price={} stock={}",
                 product.getProductId(), product.getPrice(), product.getStockQuantity());
 
+        if (product.getStockQuantity() == null || orderItemRequest.getQuantity() > product.getStockQuantity()) {
+            log.error("OUT_OF_STOCK detected for productId={} in orderId={}", product.getProductId(),
+                    orderItemRequest.getProductId());
+            throw new OutOfStockException("Requested quantity= " + orderItemRequest.getQuantity() + ", available stock= "
+                    + product.getStockQuantity());
+        }
+
         BigDecimal subtotal = product.getPrice()
                 .multiply(BigDecimal.valueOf(orderItemRequest.getQuantity()));
         log.debug("Calculated subtotal={} for productId={}",
@@ -161,7 +168,7 @@ public class OrderService {
                 .build();
     }
 
-    private OrderItemResponse toResponseItem(OrderItem orderItem) {
+    public OrderItemResponse toResponseItem(OrderItem orderItem) {
         log.trace("Mapping OrderItem itemId={} to response", orderItem.getItemId());
         String metadataJson = null;
 

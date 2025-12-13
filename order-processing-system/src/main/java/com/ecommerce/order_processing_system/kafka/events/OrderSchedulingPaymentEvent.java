@@ -1,10 +1,14 @@
 package com.ecommerce.order_processing_system.kafka.events;
 
 import com.ecommerce.order_processing_system.dto.OrderItemResponse;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
@@ -12,8 +16,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class OrderCreatedEvent {
-
+public class OrderSchedulingPaymentEvent {
     private String eventId;
     private String eventType;
     private String timestamp;
@@ -28,21 +31,23 @@ public class OrderCreatedEvent {
         private String customerId;
         private List<OrderItemResponse> items;
         private BigDecimal totalAmount;
+        private LocalDate paymenteDate;
     }
 
-    public static OrderCreatedEvent of(String orderId,
-                                       String customerId,
-                                       List<OrderItemResponse> items,
-                                       BigDecimal total) {
-        return OrderCreatedEvent.builder()
+    public static OrderSchedulingPaymentEvent of(String orderId,
+                                                 String customerId,
+                                                 List<OrderItemResponse> items,
+                                                 BigDecimal total) {
+        return OrderSchedulingPaymentEvent.builder()
                 .eventId(UUID.randomUUID().toString())
-                .eventType("ORDER_CREATED")
+                .eventType("ORDER_SCHEDULING_PAYMENT")
                 .timestamp(Instant.now().toString())
                 .payload(Payload.builder()
                         .orderId(orderId)
                         .customerId(customerId)
                         .items(items)
                         .totalAmount(total)
+                        .paymenteDate(LocalDate.now().plusDays(30))
                         .build())
                 .build();
     }

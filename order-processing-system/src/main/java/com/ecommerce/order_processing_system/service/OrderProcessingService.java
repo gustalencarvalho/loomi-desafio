@@ -1,15 +1,15 @@
 package com.ecommerce.order_processing_system.service;
 
 import com.ecommerce.order_processing_system.domain.Order;
+import com.ecommerce.order_processing_system.domain.OrderItem;
 import com.ecommerce.order_processing_system.domain.OrderStatus;
+import com.ecommerce.order_processing_system.dto.OrderItemResponse;
+import com.ecommerce.order_processing_system.dto.OrderResponse;
 import com.ecommerce.order_processing_system.dto.ProductDTO;
-import com.ecommerce.order_processing_system.exception.OrderNotFoundException;
-import com.ecommerce.order_processing_system.exception.OutOfStockException;
-import com.ecommerce.order_processing_system.exception.WarehouseUnavailableException;
-import com.ecommerce.order_processing_system.kafka.events.LowStockAlertEvent;
-import com.ecommerce.order_processing_system.kafka.events.OrderFailedEvent;
-import com.ecommerce.order_processing_system.kafka.events.OrderProcessedEvent;
+import com.ecommerce.order_processing_system.exception.*;
+import com.ecommerce.order_processing_system.kafka.events.*;
 import com.ecommerce.order_processing_system.repository.OrderRepository;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -20,8 +20,12 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.stream.Collectors;
+
+import static com.ecommerce.order_processing_system.domain.ProductType.SUBSCRIPTION;
 
 @Slf4j
 @Service
@@ -29,8 +33,10 @@ import java.util.Random;
 public class OrderProcessingService {
 
     private final OrderRepository repository;
+    private final OrderService orderService;
     private final ProductService productService;
     private final ApplicationEventPublisher eventPublisher;
+    private final ObjectMapper objectMapper;
 
     @Value("${app.order.high-value-threshold}")
     private BigDecimal highValueThreshold;
@@ -38,11 +44,11 @@ public class OrderProcessingService {
     @Value("${app.order.fraud-check-threshold}")
     private BigDecimal fraudCheckThreshold;
 
-    @Value("${app.order.subscription-limit}")
-    private Integer subscriptionLimit;
-
     @Value("${app.order.stock-zero}")
     private Integer stockZero;
+
+    @Value("${app.order.subscription-limit}")
+    private Integer subscriptionLimit;
 
     @Value("${app.order.alert-stock-low}")
     private Integer alertSotckLow;
@@ -118,8 +124,6 @@ public class OrderProcessingService {
 
         } catch (RuntimeException e) {
             log.error("Order processing FAILED for orderId={}, reason={}", orderId, e.getMessage());
-            order.setStatus(OrderStatus.FAILED);
-            order.setFailureReason(e.getMessage());
             eventPublisher.publishEvent(OrderFailedEvent.of(orderId, e.getMessage()));
         }
     }
@@ -136,6 +140,7 @@ public class OrderProcessingService {
 
             if (new Random().nextDouble() < 0.05) {
                 log.error("Fraud check FAILED for orderId={}", order.getOrderId());
+                throw new WarehouseUnavailableException("Fraud attempt detected");
             }
 
             log.debug("Fraud check passed for orderId={}", order.getOrderId());
@@ -156,14 +161,7 @@ public class OrderProcessingService {
         }
 
         if (!product.getActive()) {
-            eventPublisher.publishEvent(OrderFailedEvent.of(order.getOrderId(),"OUT_OF_STOCK"));
-        }
-
-        if (product.getStockQuantity() == null || quantity > product.getStockQuantity()) {
-            log.error("OUT_OF_STOCK detected for productId={} in orderId={}", product.getProductId(),
-                    order.getOrderId());
-            throw new OutOfStockException("Requested quantity= " + quantity + ", Available stock= "
-                    + product.getStockQuantity());
+            throw new OutOfStockException("This product inactive");
         }
 
         int newStock = product.getStockQuantity() - quantity;
@@ -189,7 +187,54 @@ public class OrderProcessingService {
     }
 
     private void validateSubscription(Order order, ProductDTO product) {
-        log.debug("Validating SUBSCRIPTION productId={} for orderId={}", product.getProductId(), order.getOrderId());
+        List<OrderResponse> orders = orderService.getOrdersByCustomer(order.getCustomerId());
+
+        long subscriptionCount = orders.stream()
+                .flatMap(orderItem -> orderItem.getItems().stream())
+                .filter(item -> SUBSCRIPTION.name().equals(item.getProductType()))
+                .count();
+
+        if (subscriptionCount >= subscriptionLimit) {
+            log.warn("Subscription limit exceeded. customerId={}, total={}, limit={}",
+                    order.getCustomerId(),
+                    subscriptionCount,
+                    subscriptionLimit
+            );
+
+            throw new SubscriptionLimitExceededException(
+                    "Subscription limit exceeded, total=" + subscriptionCount
+            );
+        }
+
+        boolean hasDuplicateActiveSubscription = orders.stream()
+                .filter(orderFilter -> orderFilter.getStatus() == OrderStatus.PROCESSED)
+                .flatMap(orderFlat -> orderFlat.getItems().stream())
+                .anyMatch(item ->
+                        SUBSCRIPTION.name().equals(item.getProductType()) &&
+                                item.getProductId().equals(product.getProductId())
+                );
+
+        if (hasDuplicateActiveSubscription) {
+            log.info("Duplicate active subscription for product {} ", hasDuplicateActiveSubscription);
+            throw new DuplicateActiveSubscriptionException(
+                    "Duplicate active subscription for product " + product.getProductId()
+            );
+        }
+
+        boolean hasSameProductInOrder = order.getItems().stream()
+                .anyMatch(item -> product.getProductId().equals(item.getProductId()));
+
+        if (hasSameProductInOrder) {
+            log.info("Incompatible subscription requested for product {} ", product.getProductId());
+            throw new IncompatibleSubscriptionsException("Incompatible subscription requested for product " + product.getProductId());
+        }
+
+        List<OrderItemResponse> items = order.getItems().stream()
+                .map(this::toResponseItem)
+                .collect(Collectors.toList());
+
+        log.debug("Validating SUBSCRIPTION successfully productId={} for orderId={}", product.getProductId(), order.getOrderId());
+        eventPublisher.publishEvent(OrderSchedulingPaymentEvent.of(order.getOrderId(), order.getCustomerId(), items, order.getTotalAmount()));
     }
 
     private void validateDigital(Order order, ProductDTO product) {
@@ -248,7 +293,30 @@ public class OrderProcessingService {
         return deliveryDate;
     }
 
-    public void paymentCarriedOut(BigDecimal totalAmount) {
+    private void paymentCarriedOut(BigDecimal totalAmount) {
         log.info("Payment carried out successfully total={}", totalAmount);
+    }
+
+    public OrderItemResponse toResponseItem(OrderItem orderItem) {
+        log.trace("Mapping OrderItem itemId={} to response", orderItem.getItemId());
+        String metadataJson = null;
+
+        if (orderItem.getMetadata() != null) {
+            try {
+                metadataJson = objectMapper.writeValueAsString(orderItem.getMetadata());
+            } catch (Exception e) {
+                throw new ErrorSystemDefaultException(e.getMessage());
+            }
+        }
+        return OrderItemResponse.builder()
+                .itemId(orderItem.getItemId())
+                .productId(orderItem.getProductId())
+                .productName(orderItem.getProductName())
+                .productType(orderItem.getProductType())
+                .quantity(orderItem.getQuantity())
+                .price(orderItem.getPrice())
+                .subtotal(orderItem.getSubtotal())
+                .metadata(metadataJson)
+                .build();
     }
 }
