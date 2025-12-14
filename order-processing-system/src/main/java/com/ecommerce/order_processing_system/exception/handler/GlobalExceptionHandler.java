@@ -202,4 +202,24 @@ public class GlobalExceptionHandler {
         problem.setProperty("timestamp", Instant.now());
         return problem;
     }
+
+    @ExceptionHandler(InvalidCorporateDataException.class)
+    ProblemDetail handleInvalidCorporateDataException(final InvalidCorporateDataException ex, final HttpServletRequest request) {
+        ProblemDetail problem = ProblemDetail.forStatus(BAD_REQUEST);
+        problem.setType(URI.create(request.getContextPath()));
+        problem.setTitle("INVALID_CORPORATE_DATA");
+        problem.setDetail(ex.getMessage());
+        problem.setProperty("timestamp", Instant.now());
+        return problem;
+    }
+
+    @ExceptionHandler(InvalidPaymentTermsException.class)
+    ProblemDetail handleInvalidPaymentTermsException(final InvalidPaymentTermsException ex, final HttpServletRequest request) {
+        ProblemDetail problem = ProblemDetail.forStatus(BAD_REQUEST);
+        problem.setType(URI.create(request.getContextPath()));
+        problem.setTitle("INVALID_PAYMENT_TERMS");
+        problem.setDetail(ex.getMessage());
+        problem.setProperty("timestamp", Instant.now());
+        return problem;
+    }
 }

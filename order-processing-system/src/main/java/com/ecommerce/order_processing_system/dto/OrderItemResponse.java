@@ -23,5 +23,5 @@ public class OrderItemResponse {
     private Integer quantity;
     private BigDecimal price;
     private BigDecimal subtotal;
-    private String metadata;
+    private Map<String, Object> metadata;
 }

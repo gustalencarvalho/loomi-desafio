@@ -40,6 +40,7 @@ app:
     stock-zero: 0
     corporate-approval-threshold: 50000
     corporate-volume-discount-threshold: 100
+    corporate-discount: 0.15
     topic:
       created: order-events-created
       processed: order-events-processed

@@ -11,6 +11,7 @@ import com.ecommerce.order_processing_system.kafka.events.OrderFailedEvent;
 import com.ecommerce.order_processing_system.kafka.events.OrderProcessedEvent;
 import com.ecommerce.order_processing_system.kafka.events.OrderSchedulingPaymentEvent;
 import com.ecommerce.order_processing_system.repository.OrderRepository;
+import com.ecommerce.order_processing_system.util.CnpjValidator;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,12 +21,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static com.ecommerce.order_processing_system.domain.OrderStatus.*;
@@ -54,6 +53,12 @@ public class OrderProcessingService {
     @Value("${app.order.subscription-limit}")
     private Integer subscriptionLimit;
 
+    @Value("${app.order.corporate-discount}")
+    private String corporateDiscount;
+
+    @Value("${app.order.corporate-volume-discount-threshold}")
+    private Integer orporateVolumeThreshold;
+
     @Value("${app.order.alert-stock-low}")
     private Integer alertSotckLow;
 
@@ -70,8 +75,6 @@ public class OrderProcessingService {
                     log.error("Order {} not found during processing", orderId);
                     return new OrderNotFoundException("Order " + orderId + " not found");
                 });
-
-        log.debug("Loaded order: {}", order);
 
         try {
             log.info("Running global validations for orderId={}", orderId);
@@ -298,15 +301,58 @@ public class OrderProcessingService {
         if (!reserved) {
             throw new PreOrderSoldOutException(PRE_ORDER_SOLD_OUT);
         }
+
+        log.info("Your order has been scheduled for delivery on {} ", releaseDateRaw);
     }
 
     private void validateCorporate(Order order, ProductDTO product, int qty) {
         log.debug("Validating CORPORATE productId={} for orderId={} qty={}", product.getProductId(), order.getOrderId(), qty);
 
+        Optional<String> firstCnpj = order.getItems().stream()
+                .map(OrderItem::getMetadata)
+                .map(metadata -> metadata.get("cnpj"))
+                .filter(Objects::nonNull)
+                .map(Object::toString)
+                .findFirst();
+
+        firstCnpj.ifPresent(cnpj -> {
+            if (!CnpjValidator.isValidCnpj(cnpj)) {
+                log.info("CNPJ invalid: {}", cnpj);
+                throw new InvalidCorporateDataException(INVALID_CORPORATE_DATA);
+            }
+        });
+
         if (order.getTotalAmount().compareTo(new BigDecimal("100000")) > 0) {
             log.error("CREDIT_LIMIT_EXCEEDED for orderId={}", order.getOrderId());
             throw new CreditLimitExceededException(CREDIT_LIMIT_EXCEEDED);
         }
+
+        int quantity = order.getItems()
+                .stream()
+                .mapToInt(OrderItem::getQuantity)
+                .sum();
+
+        if (quantity > orporateVolumeThreshold) {
+            BigDecimal total = order.getTotalAmount();
+            BigDecimal discountRate = new BigDecimal(corporateDiscount);
+            BigDecimal discount = total.multiply(discountRate);
+            BigDecimal totalWithDiscount = total.subtract(discount).setScale(2, RoundingMode.HALF_UP);
+            order.setTotalAmount(totalWithDiscount);
+            log.info("Total without discount {} ", total);
+            log.info("orderId={} volume discount applied: {}", order.getOrderId(), totalWithDiscount);
+        }
+
+        Optional<String> paymentTerms = order.getItems().stream()
+                .map(OrderItem::getMetadata)
+                .map(metadata -> metadata.get("paymentTerms"))
+                .filter(Objects::nonNull)
+                .map(Object::toString)
+                .findFirst();
+
+        paymentTerms.ifPresent(payment -> {
+            calculateTermsPayment(payment);
+        });
+
     }
 
     private LocalDateTime calculateDeliveryDate(Order order, ProductDTO product) {
@@ -333,15 +379,7 @@ public class OrderProcessingService {
 
     public OrderItemResponse toResponseItem(OrderItem orderItem) {
         log.trace("Mapping OrderItem itemId={} to response", orderItem.getItemId());
-        String metadataJson = null;
 
-        if (orderItem.getMetadata() != null) {
-            try {
-                metadataJson = objectMapper.writeValueAsString(orderItem.getMetadata());
-            } catch (Exception e) {
-                throw new ErrorSystemDefaultException(e.getMessage());
-            }
-        }
         return OrderItemResponse.builder()
                 .itemId(orderItem.getItemId())
                 .productId(orderItem.getProductId())
@@ -350,7 +388,7 @@ public class OrderProcessingService {
                 .quantity(orderItem.getQuantity())
                 .price(orderItem.getPrice())
                 .subtotal(orderItem.getSubtotal())
-                .metadata(metadataJson)
+                .metadata(orderItem.getMetadata())
                 .build();
     }
 
@@ -362,6 +400,17 @@ public class OrderProcessingService {
         log.info("Send e-mail with product");
         String downloadLink = "https://download.fake.com/" + orderId;
         log.info("Your digital product is ready", "Download: " + downloadLink + "\nLicense: " + licenseKey);
+    }
+
+    private void calculateTermsPayment(String paymentTerms) {
+        LocalDate dueDate = switch (paymentTerms) {
+            case "NET_30" -> LocalDate.now().plusDays(30);
+            case "NET_60" -> LocalDate.now().plusDays(60);
+            case "NET_90" -> LocalDate.now().plusDays(90);
+            default -> throw new InvalidPaymentTermsException(INVALID_PAYMENT_TERMS);
+        };
+
+        log.info("Due date {}", dueDate);
     }
 
 }

@@ -7,7 +7,6 @@ import com.ecommerce.order_processing_system.dto.CreateOrderItemRequest;
 import com.ecommerce.order_processing_system.dto.CreateOrderRequest;
 import com.ecommerce.order_processing_system.dto.OrderItemResponse;
 import com.ecommerce.order_processing_system.dto.OrderResponse;
-import com.ecommerce.order_processing_system.exception.ErrorSystemDefaultException;
 import com.ecommerce.order_processing_system.exception.OrderNotFoundException;
 import com.ecommerce.order_processing_system.exception.OutOfStockException;
 import com.ecommerce.order_processing_system.kafka.events.OrderCreatedEvent;
@@ -132,8 +131,6 @@ public class OrderService {
         log.debug("Calculated subtotal={} for productId={}",
                 subtotal, product.getProductId());
 
-        String metadataJson = null;
-
         OrderItem item = OrderItem.builder()
                 .productId(product.getProductId())
                 .productName(product.getName())
@@ -141,7 +138,7 @@ public class OrderService {
                 .quantity(orderItemRequest.getQuantity())
                 .price(product.getPrice())
                 .subtotal(subtotal)
-                .metadata(product.getMetadata())
+                .metadata(orderItemRequest.getMetadata())
                 .build();
 
         log.debug("Created OrderItem for productId={} qty={}",
@@ -171,15 +168,7 @@ public class OrderService {
 
     public OrderItemResponse toResponseItem(OrderItem orderItem) {
         log.trace("Mapping OrderItem itemId={} to response", orderItem.getItemId());
-        String metadataJson = null;
 
-        if (orderItem.getMetadata() != null) {
-            try {
-                metadataJson = objectMapper.writeValueAsString(orderItem.getMetadata());
-            } catch (Exception e) {
-                throw new ErrorSystemDefaultException(e.getMessage());
-            }
-        }
         return OrderItemResponse.builder()
                 .itemId(orderItem.getItemId())
                 .productId(orderItem.getProductId())
@@ -188,7 +177,7 @@ public class OrderService {
                 .quantity(orderItem.getQuantity())
                 .price(orderItem.getPrice())
                 .subtotal(orderItem.getSubtotal())
-                .metadata(metadataJson)
+                .metadata(orderItem.getMetadata())
                 .build();
     }
 }
