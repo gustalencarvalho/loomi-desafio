@@ -16,7 +16,8 @@ import java.math.RoundingMode;
 import java.util.Objects;
 import java.util.Optional;
 
-import static com.ecommerce.order_processing_system.domain.OrderStatus.*;
+import static com.ecommerce.order_processing_system.domain.OrderStatus.CREDIT_LIMIT_EXCEEDED;
+import static com.ecommerce.order_processing_system.domain.OrderStatus.INVALID_CORPORATE_DATA;
 
 @Slf4j
 @Component

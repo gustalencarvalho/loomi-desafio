@@ -5,22 +5,17 @@ import com.ecommerce.order_processing_system.domain.OrderItem;
 import com.ecommerce.order_processing_system.domain.policy.PhysicalPolicy;
 import com.ecommerce.order_processing_system.dto.ProductDTO;
 import com.ecommerce.order_processing_system.exception.OutOfStockException;
-import com.ecommerce.order_processing_system.exception.WarehouseUnavailableException;
 import com.ecommerce.order_processing_system.kafka.events.LowStockAlertEvent;
 import com.ecommerce.order_processing_system.service.ProductService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.Random;
 
 import static com.ecommerce.order_processing_system.domain.OrderStatus.OUT_OF_STOCK;
-import static com.ecommerce.order_processing_system.domain.OrderStatus.WAREHOUSE_UNAVAILABLE;
 
 @Slf4j
 @Component
