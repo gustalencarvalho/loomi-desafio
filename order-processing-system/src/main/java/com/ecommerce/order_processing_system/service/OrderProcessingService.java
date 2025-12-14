@@ -7,7 +7,10 @@ import com.ecommerce.order_processing_system.dto.OrderItemResponse;
 import com.ecommerce.order_processing_system.dto.OrderResponse;
 import com.ecommerce.order_processing_system.dto.ProductDTO;
 import com.ecommerce.order_processing_system.exception.*;
-import com.ecommerce.order_processing_system.kafka.events.*;
+import com.ecommerce.order_processing_system.kafka.events.LowStockAlertEvent;
+import com.ecommerce.order_processing_system.kafka.events.OrderFailedEvent;
+import com.ecommerce.order_processing_system.kafka.events.OrderProcessedEvent;
+import com.ecommerce.order_processing_system.kafka.events.OrderSchedulingPaymentEvent;
 import com.ecommerce.order_processing_system.repository.OrderRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +26,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static com.ecommerce.order_processing_system.domain.ProductType.SUBSCRIPTION;
@@ -239,6 +243,32 @@ public class OrderProcessingService {
 
     private void validateDigital(Order order, ProductDTO product) {
         log.debug("Validating DIGITAL productId={} for orderId={}", product.getProductId(), order.getOrderId());
+
+        boolean clientAlreadyOwnsProduct =
+                orderService.getOrdersByCustomer(order.getCustomerId()).stream()
+                        .filter(o -> o.getStatus() == OrderStatus.PROCESSED)
+                        .flatMap(o -> o.getItems().stream())
+                        .anyMatch(item ->
+                                product.getProductId().equals(item.getProductId())
+                        );
+
+        if (clientAlreadyOwnsProduct) {
+            throw new AlreadyOwnedDigitalProductException(
+                    "Customer already owns digital productId=" + product.getProductId()
+            );
+        }
+
+        int availableLicenses = getAvailableLicenses(product.getProductId());
+
+        if (availableLicenses <= 0) {
+            log.error("No licenses available for productId={}", product.getProductId());
+            throw new LicenseUnavailableException("No licenses available for productId=" + product.getProductId());
+        }
+
+        //Envio de e-mail com a licenca
+        String licenseKey = UUID.randomUUID().toString();
+        log.info("Key active created={}", licenseKey);
+        sendEmail(order.getOrderId(), licenseKey);
     }
 
     private void validatePreOrder(Order order, ProductDTO product) {
@@ -319,4 +349,15 @@ public class OrderProcessingService {
                 .metadata(metadataJson)
                 .build();
     }
+
+    private int getAvailableLicenses(String productId) {
+        return Math.abs(productId.hashCode() % 6);
+    }
+
+    private void sendEmail(String orderId, String licenseKey) {
+        log.info("Send e-mail with product");
+        String downloadLink = "https://download.fake.com/" + orderId;
+        log.info("Your digital product is ready", "Download: " + downloadLink + "\nLicense: " + licenseKey);
+    }
+
 }

@@ -11,7 +11,7 @@ help:
 	@echo "  make logs        - View application logs"
 	@echo "  make db-migrate  - Run database migrations"
 
-build:
+up:
 	cd order-processing-system && mvn clean install
 	cd product-catalog-service && mvn clean install
 	docker-compose build
@@ -25,10 +25,6 @@ test:
 
 down:
 	docker-compose down
-
-clean:
-	docker-compose down -v
-	mvn clean
 
 logs:
 	docker logs -f order-service
