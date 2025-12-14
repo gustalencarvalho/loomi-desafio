@@ -45,7 +45,7 @@ public class SubscriptionProductValidator implements ProductValidator {
 
         long subscriptionCount = orders.stream()
                 .flatMap(orderItem -> orderItem.getItems().stream())
-                .filter(it -> SUBSCRIPTION.name().equals(it.getProductType()))
+                .filter(it -> SUBSCRIPTION.equals(it.getProductType()))
                 .count();
 
         if (subscriptionCount >= subscriptionLimit) {
@@ -62,7 +62,7 @@ public class SubscriptionProductValidator implements ProductValidator {
                 .filter(orderFilter -> orderFilter.getStatus() == PROCESSED)
                 .flatMap(orderFlat -> orderFlat.getItems().stream())
                 .anyMatch(it ->
-                        SUBSCRIPTION.name().equals(it.getProductType()) &&
+                        SUBSCRIPTION.equals(it.getProductType()) &&
                                 it.getProductId().equals(product.getProductId())
                 );
 
