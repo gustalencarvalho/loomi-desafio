@@ -222,4 +222,14 @@ public class GlobalExceptionHandler {
         problem.setProperty("timestamp", Instant.now());
         return problem;
     }
+
+    @ExceptionHandler(UnsupportedOperationException.class)
+    ProblemDetail handleUnsupportedOperationException(final UnsupportedOperationException ex, final HttpServletRequest request) {
+        ProblemDetail problem = ProblemDetail.forStatus(BAD_REQUEST);
+        problem.setType(URI.create(request.getContextPath()));
+        problem.setTitle("VALIDATOR");
+        problem.setDetail(ex.getMessage());
+        problem.setProperty("timestamp", Instant.now());
+        return problem;
+    }
 }

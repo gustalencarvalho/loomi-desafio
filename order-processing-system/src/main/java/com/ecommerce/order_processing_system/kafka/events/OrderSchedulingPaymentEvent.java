@@ -31,7 +31,7 @@ public class OrderSchedulingPaymentEvent {
         private String customerId;
         private List<OrderItemResponse> items;
         private BigDecimal totalAmount;
-        private LocalDate paymenteDate;
+        private String paymenteDate;
     }
 
     public static OrderSchedulingPaymentEvent of(String orderId,
@@ -47,7 +47,7 @@ public class OrderSchedulingPaymentEvent {
                         .customerId(customerId)
                         .items(items)
                         .totalAmount(total)
-                        .paymenteDate(LocalDate.now().plusDays(30))
+                        .paymenteDate(LocalDate.now().plusDays(30).toString())
                         .build())
                 .build();
     }
