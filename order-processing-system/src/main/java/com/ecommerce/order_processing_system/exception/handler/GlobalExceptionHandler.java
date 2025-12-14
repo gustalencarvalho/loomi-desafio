@@ -152,4 +152,24 @@ public class GlobalExceptionHandler {
         problem.setProperty("timestamp", Instant.now());
         return problem;
     }
+
+    @ExceptionHandler(LicenseUnavailableException.class)
+    ProblemDetail handleLicenseUnavailableException(final LicenseUnavailableException ex, final HttpServletRequest request) {
+        ProblemDetail problem = ProblemDetail.forStatus(BAD_REQUEST);
+        problem.setType(URI.create(request.getContextPath()));
+        problem.setTitle("LICENSE_UNAVAILABLE");
+        problem.setDetail(ex.getMessage());
+        problem.setProperty("timestamp", Instant.now());
+        return problem;
+    }
+
+    @ExceptionHandler(AlreadyOwnedDigitalProductException.class)
+    ProblemDetail handleAlreadyOwnedDigitalProductException(final AlreadyOwnedDigitalProductException ex, final HttpServletRequest request) {
+        ProblemDetail problem = ProblemDetail.forStatus(BAD_REQUEST);
+        problem.setType(URI.create(request.getContextPath()));
+        problem.setTitle("ALREADY_OWNED");
+        problem.setDetail(ex.getMessage());
+        problem.setProperty("timestamp", Instant.now());
+        return problem;
+    }
 }

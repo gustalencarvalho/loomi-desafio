@@ -1,0 +1,7 @@
+package com.ecommerce.order_processing_system.exception;
+
+public class LicenseUnavailableException extends RuntimeException {
+    public LicenseUnavailableException(String message) {
+        super(message);
+    }
+}
