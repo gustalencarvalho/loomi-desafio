@@ -21,10 +21,10 @@ public class ProductService {
     @Transactional(readOnly = true)
     public ProductDto getProduct(String productId) {
         log.info("GET product for ID: {} ", productId);
-        return productRepository.findByProductIdAndActiveTrue(productId)
+        return productRepository.findByProductId(productId)
                 .map(mapper::toDto)
                 .orElseThrow(() -> new ProductNotFoundException(
-                        "Product " + productId + " not found"
+                        "Product " + productId + " not found or inactive"
                 ));
     }
 
