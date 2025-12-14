@@ -2,6 +2,7 @@ package com.ecommerce.order_processing_system.service;
 
 import com.ecommerce.order_processing_system.domain.Order;
 import com.ecommerce.order_processing_system.domain.OrderItem;
+import com.ecommerce.order_processing_system.domain.OrderStatus;
 import com.ecommerce.order_processing_system.dto.OrderItemResponse;
 import com.ecommerce.order_processing_system.dto.OrderResponse;
 import com.ecommerce.order_processing_system.dto.ProductDTO;
@@ -144,7 +145,6 @@ public class OrderProcessingService {
 
         if (order.getTotalAmount().compareTo(fraudCheckThreshold) > 0) {
             log.info("Running probabilistic fraud check for orderId={}", order.getOrderId());
-
             if (new Random().nextDouble() < 0.05) {
                 log.error("Fraud check FAILED for orderId={}", order.getOrderId());
                 throw new FraudDetectedException(FRAUD_DETECTED);
@@ -224,8 +224,11 @@ public class OrderProcessingService {
             throw new DuplicateActiveSubscriptionException(DUPLICATE_ACTIVE_SUBSCRIPTION);
         }
 
-        boolean hasSameProductInOrder = order.getItems().stream()
-                .anyMatch(item -> product.getProductId().equals(item.getProductId()));
+        boolean hasSameProductInOrder = orderService.getOrdersByCustomer(order.getCustomerId()).stream()
+                .filter(o -> o.getStatus() == OrderStatus.PROCESSED)
+                .flatMap(o -> o.getItems().stream())
+                .filter(item -> item.getProductType() == SUBSCRIPTION) // só assinaturas
+                .anyMatch(item -> item.getProductId().equals(product.getProductId()));
 
         if (hasSameProductInOrder) {
             log.info("Incompatible subscription requested for product {} ", product.getProductId());
@@ -271,25 +274,25 @@ public class OrderProcessingService {
         log.debug("Validating PRE_ORDER productId={} for orderId={}",
                 product.getProductId(), order.getOrderId());
 
-        Map<String, Object> metadata = product.getMetadata();
+        Optional<String> releaseDateRaw = order.getItems().stream()
+                .map(OrderItem::getMetadata)
+                .map(metadata -> metadata.get("releaseDate"))
+                .filter(Objects::nonNull)
+                .map(Object::toString)
+                .findFirst();
 
-        if (metadata == null) {
-            log.debug("No metadata for PRE_ORDER validation productId={}", product.getProductId());
-            return;
-        }
+        releaseDateRaw.ifPresent(date -> {
+            if (date != null) {
+                LocalDate release = LocalDate.parse(date);
+                log.debug("PRE_ORDER releaseDate={} for productId={}", release, product.getProductId());
 
-        Object releaseDateRaw = metadata.get("releaseDate");
-
-        if (releaseDateRaw != null) {
-            LocalDate release = LocalDate.parse(releaseDateRaw.toString());
-            log.debug("PRE_ORDER releaseDate={} for productId={}", release, product.getProductId());
-
-            if (!release.isAfter(LocalDate.now())) {
-                log.error("RELEASE_DATE_PASSED for productId={} in orderId={}",
-                        product.getProductId(), order.getOrderId());
-                throw new ReleaseDatePassedException(RELEASE_DATE_PASSED);
+                if (!release.isAfter(LocalDate.now())) {
+                    log.error("RELEASE_DATE_PASSED for productId={} in orderId={}",
+                            product.getProductId(), order.getOrderId());
+                    throw new ReleaseDatePassedException(RELEASE_DATE_PASSED);
+                }
             }
-        }
+        });
 
         int requestedQuantity = order.getItems().stream()
                 .filter(item -> item.getProductId().equals(product.getProductId()))

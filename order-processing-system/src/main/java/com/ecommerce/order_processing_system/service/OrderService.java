@@ -120,10 +120,12 @@ public class OrderService {
         log.debug("Found product productId={} price={} stock={}",
                 product.getProductId(), product.getPrice(), product.getStockQuantity());
 
-        if (product.getStockQuantity() == null || orderItemRequest.getQuantity() > product.getStockQuantity()) {
-            log.error("OUT_OF_STOCK detected for productId={} in orderId={}", product.getProductId(),
-                    orderItemRequest.getProductId());
-            throw new OutOfStockException(OUT_OF_STOCK);
+        if (product.getStockQuantity() != null) {
+            if (orderItemRequest.getQuantity() > product.getStockQuantity()) {
+                log.error("OUT_OF_STOCK detected for productId={} in orderId={}",
+                        product.getProductId(), orderItemRequest.getProductId());
+                throw new OutOfStockException(OUT_OF_STOCK);
+            }
         }
 
         BigDecimal subtotal = product.getPrice()
