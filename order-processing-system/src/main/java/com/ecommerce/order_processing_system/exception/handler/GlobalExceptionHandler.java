@@ -172,4 +172,34 @@ public class GlobalExceptionHandler {
         problem.setProperty("timestamp", Instant.now());
         return problem;
     }
+
+    @ExceptionHandler(ReleaseDatePassedException.class)
+    ProblemDetail handleReleaseDatePassedException(final ReleaseDatePassedException ex, final HttpServletRequest request) {
+        ProblemDetail problem = ProblemDetail.forStatus(BAD_REQUEST);
+        problem.setType(URI.create(request.getContextPath()));
+        problem.setTitle("RELEASE_DATE_PASSED");
+        problem.setDetail(ex.getMessage());
+        problem.setProperty("timestamp", Instant.now());
+        return problem;
+    }
+
+    @ExceptionHandler(CreditLimitExceededException.class)
+    ProblemDetail handleCreditLimitExceededException(final CreditLimitExceededException ex, final HttpServletRequest request) {
+        ProblemDetail problem = ProblemDetail.forStatus(BAD_REQUEST);
+        problem.setType(URI.create(request.getContextPath()));
+        problem.setTitle("CREDIT_LIMIT_EXCEEDED");
+        problem.setDetail(ex.getMessage());
+        problem.setProperty("timestamp", Instant.now());
+        return problem;
+    }
+
+    @ExceptionHandler(PreOrderSoldOutException.class)
+    ProblemDetail handlePreOrderSoldOutException(final PreOrderSoldOutException ex, final HttpServletRequest request) {
+        ProblemDetail problem = ProblemDetail.forStatus(BAD_REQUEST);
+        problem.setType(URI.create(request.getContextPath()));
+        problem.setTitle("PRE_ORDER_SOLD_OUT");
+        problem.setDetail(ex.getMessage());
+        problem.setProperty("timestamp", Instant.now());
+        return problem;
+    }
 }

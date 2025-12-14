@@ -5,6 +5,8 @@ import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
+
 @FeignClient(name = "product-catalog-service", url = "${app.product-catalog.url}")
 public interface ProductCatalogClient {
 
@@ -12,6 +14,9 @@ public interface ProductCatalogClient {
     ProductDTO getProduct(@PathVariable String productId);
 
     @RequestMapping(method = RequestMethod.PATCH, value = "/api/products/{productId}/update/stock/{quantity}")
-    boolean updateStock(@PathVariable("productId") String productId, @PathVariable("quantity") Integer quantity);
+    boolean updateStock(@PathVariable String productId, @PathVariable Integer quantity);
+
+    @RequestMapping(method = RequestMethod.PATCH, value = "/api/products/{productId}/update/lote/{quantity}")
+    boolean reservePreOrderSlots(@PathVariable String productId, @PathVariable Integer quantity);
 
 }
