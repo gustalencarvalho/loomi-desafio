@@ -2,8 +2,8 @@ package com.ecommerce.order_processing_system.exception;
 
 import com.ecommerce.order_processing_system.domain.OrderStatus;
 
-public class AlreadyOwnedDigitalProductException extends RuntimeException {
-    public AlreadyOwnedDigitalProductException(OrderStatus message) {
+public class CreditLimitExceededException extends RuntimeException {
+    public CreditLimitExceededException(OrderStatus message) {
         super(String.valueOf(message));
     }
 }

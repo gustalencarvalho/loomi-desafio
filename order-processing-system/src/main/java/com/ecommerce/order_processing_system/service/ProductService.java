@@ -7,6 +7,8 @@ import com.ecommerce.order_processing_system.exception.ProductNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.Map;
+
 @Service
 @RequiredArgsConstructor
 public class ProductService {
@@ -26,5 +28,9 @@ public class ProductService {
 
     public boolean updateStock(String productId, int quantity) {
         return client.updateStock(productId, quantity);
+    }
+
+    public boolean reservePreOrderSlots(String productId, Integer quantity) {
+        return client.reservePreOrderSlots(productId, quantity);
     }
 }

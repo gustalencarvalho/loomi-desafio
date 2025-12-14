@@ -23,6 +23,8 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static com.ecommerce.order_processing_system.domain.OrderStatus.OUT_OF_STOCK;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -122,8 +124,7 @@ public class OrderService {
         if (product.getStockQuantity() == null || orderItemRequest.getQuantity() > product.getStockQuantity()) {
             log.error("OUT_OF_STOCK detected for productId={} in orderId={}", product.getProductId(),
                     orderItemRequest.getProductId());
-            throw new OutOfStockException("Requested quantity= " + orderItemRequest.getQuantity() + ", available stock= "
-                    + product.getStockQuantity());
+            throw new OutOfStockException(OUT_OF_STOCK);
         }
 
         BigDecimal subtotal = product.getPrice()

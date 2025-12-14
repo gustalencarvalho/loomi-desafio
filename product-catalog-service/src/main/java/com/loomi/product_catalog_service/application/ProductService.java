@@ -10,6 +10,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Map;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -30,7 +32,7 @@ public class ProductService {
 
     @Transactional
     public boolean reserveStock(String productId, int quantity) {
-        Product product = productRepository.findById(productId)
+        Product product = productRepository.findByProductId(productId)
                 .orElseThrow(() -> new ProductNotFoundException(
                         "Product " + productId + " not found"
                 ));
@@ -40,6 +42,24 @@ public class ProductService {
         }
 
         product.setStockQuantity(quantity);
+        productRepository.save(product);
+        return true;
+    }
+
+    @Transactional
+    public boolean reservePreOrder(String productId, int quantity) {
+        Product product = productRepository.findByProductIdForUpdate(productId)
+                .orElseThrow(() -> new ProductNotFoundException(
+                        "Product " + productId + " not found"
+                ));
+
+        int availableSlots = Integer.parseInt(product.getMetadata().get("preOrderSlots").toString());
+
+        if (availableSlots < quantity) {
+            return false;
+        }
+
+        product.getMetadata().put("preOrderSlots", availableSlots - quantity);
         productRepository.save(product);
         return true;
     }

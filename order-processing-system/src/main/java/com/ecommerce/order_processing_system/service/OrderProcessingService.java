@@ -2,7 +2,6 @@ package com.ecommerce.order_processing_system.service;
 
 import com.ecommerce.order_processing_system.domain.Order;
 import com.ecommerce.order_processing_system.domain.OrderItem;
-import com.ecommerce.order_processing_system.domain.OrderStatus;
 import com.ecommerce.order_processing_system.dto.OrderItemResponse;
 import com.ecommerce.order_processing_system.dto.OrderResponse;
 import com.ecommerce.order_processing_system.dto.ProductDTO;
@@ -29,6 +28,7 @@ import java.util.Random;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import static com.ecommerce.order_processing_system.domain.OrderStatus.*;
 import static com.ecommerce.order_processing_system.domain.ProductType.SUBSCRIPTION;
 
 @Slf4j
@@ -115,11 +115,11 @@ public class OrderProcessingService {
                     order.getItems().stream().anyMatch(i -> i.getProductType().name().equals("CORPORATE"))) {
 
                 log.info("orderId={} requires corporate approval", orderId);
-                order.setStatus(OrderStatus.PENDING_APPROVAL);
+                order.setStatus(PENDING_APPROVAL);
 
             } else {
                 log.info("orderId={} processed successfully", orderId);
-                order.setStatus(OrderStatus.PROCESSED);
+                order.setStatus(PROCESSED);
             }
 
             eventPublisher.publishEvent(OrderProcessedEvent.of(orderId));
@@ -144,7 +144,7 @@ public class OrderProcessingService {
 
             if (new Random().nextDouble() < 0.05) {
                 log.error("Fraud check FAILED for orderId={}", order.getOrderId());
-                throw new WarehouseUnavailableException("Fraud attempt detected");
+                throw new FraudDetectedException(FRAUD_DETECTED);
             }
 
             log.debug("Fraud check passed for orderId={}", order.getOrderId());
@@ -157,22 +157,22 @@ public class OrderProcessingService {
 
         if (product == null) {
             log.error("Cannot reserve inventory for null product");
-            throw new WarehouseUnavailableException("Cannot reserve inventory");
+            throw new WarehouseUnavailableException(WAREHOUSE_UNAVAILABLE);
         }
 
         if (product.getStockQuantity() == stockZero) {
-            throw new OutOfStockException("No stock at the moment");
+            throw new OutOfStockException(OUT_OF_STOCK);
         }
 
         if (!product.getActive()) {
-            throw new OutOfStockException("This product inactive");
+            throw new OutOfStockException(OUT_OF_STOCK);
         }
 
         int newStock = product.getStockQuantity() - quantity;
         boolean reserved = productService.updateStock(product.getProductId(), newStock);
 
         if (!reserved) {
-            throw new OutOfStockException("Not enough stock for productId=" + product.getProductId());
+            throw new OutOfStockException(OUT_OF_STOCK);
         }
 
         if (product.getStockQuantity() < alertSotckLow) {
@@ -205,13 +205,11 @@ public class OrderProcessingService {
                     subscriptionLimit
             );
 
-            throw new SubscriptionLimitExceededException(
-                    "Subscription limit exceeded, total=" + subscriptionCount
-            );
+            throw new SubscriptionLimitExceededException(SUBSCRIPTION_LIMIT_EXCEEDED);
         }
 
         boolean hasDuplicateActiveSubscription = orders.stream()
-                .filter(orderFilter -> orderFilter.getStatus() == OrderStatus.PROCESSED)
+                .filter(orderFilter -> orderFilter.getStatus() == PROCESSED)
                 .flatMap(orderFlat -> orderFlat.getItems().stream())
                 .anyMatch(item ->
                         SUBSCRIPTION.name().equals(item.getProductType()) &&
@@ -220,9 +218,7 @@ public class OrderProcessingService {
 
         if (hasDuplicateActiveSubscription) {
             log.info("Duplicate active subscription for product {} ", hasDuplicateActiveSubscription);
-            throw new DuplicateActiveSubscriptionException(
-                    "Duplicate active subscription for product " + product.getProductId()
-            );
+            throw new DuplicateActiveSubscriptionException(DUPLICATE_ACTIVE_SUBSCRIPTION);
         }
 
         boolean hasSameProductInOrder = order.getItems().stream()
@@ -230,7 +226,7 @@ public class OrderProcessingService {
 
         if (hasSameProductInOrder) {
             log.info("Incompatible subscription requested for product {} ", product.getProductId());
-            throw new IncompatibleSubscriptionsException("Incompatible subscription requested for product " + product.getProductId());
+            throw new IncompatibleSubscriptionsException(INCOMPATIBLE_SUBSCRIPTIONS);
         }
 
         List<OrderItemResponse> items = order.getItems().stream()
@@ -246,26 +242,23 @@ public class OrderProcessingService {
 
         boolean clientAlreadyOwnsProduct =
                 orderService.getOrdersByCustomer(order.getCustomerId()).stream()
-                        .filter(o -> o.getStatus() == OrderStatus.PROCESSED)
+                        .filter(o -> o.getStatus() == PROCESSED)
                         .flatMap(o -> o.getItems().stream())
                         .anyMatch(item ->
                                 product.getProductId().equals(item.getProductId())
                         );
 
         if (clientAlreadyOwnsProduct) {
-            throw new AlreadyOwnedDigitalProductException(
-                    "Customer already owns digital productId=" + product.getProductId()
-            );
+            throw new AlreadyOwnedDigitalProductException(ALREADY_OWNED);
         }
 
         int availableLicenses = getAvailableLicenses(product.getProductId());
 
         if (availableLicenses <= 0) {
             log.error("No licenses available for productId={}", product.getProductId());
-            throw new LicenseUnavailableException("No licenses available for productId=" + product.getProductId());
+            throw new LicenseUnavailableException(LICENSE_UNAVAILABLE);
         }
 
-        //Envio de e-mail com a licenca
         String licenseKey = UUID.randomUUID().toString();
         log.info("Key active created={}", licenseKey);
         sendEmail(order.getOrderId(), licenseKey);
@@ -291,8 +284,19 @@ public class OrderProcessingService {
             if (!release.isAfter(LocalDate.now())) {
                 log.error("RELEASE_DATE_PASSED for productId={} in orderId={}",
                         product.getProductId(), order.getOrderId());
-                throw new RuntimeException("RELEASE_DATE_PASSED");
+                throw new ReleaseDatePassedException(RELEASE_DATE_PASSED);
             }
+        }
+
+        int requestedQuantity = order.getItems().stream()
+                .filter(item -> item.getProductId().equals(product.getProductId()))
+                .mapToInt(OrderItem::getQuantity)
+                .sum();
+
+        boolean reserved = productService.reservePreOrderSlots(product.getProductId(), requestedQuantity);
+
+        if (!reserved) {
+            throw new PreOrderSoldOutException(PRE_ORDER_SOLD_OUT);
         }
     }
 
@@ -301,7 +305,7 @@ public class OrderProcessingService {
 
         if (order.getTotalAmount().compareTo(new BigDecimal("100000")) > 0) {
             log.error("CREDIT_LIMIT_EXCEEDED for orderId={}", order.getOrderId());
-            throw new RuntimeException("CREDIT_LIMIT_EXCEEDED");
+            throw new CreditLimitExceededException(CREDIT_LIMIT_EXCEEDED);
         }
     }
 

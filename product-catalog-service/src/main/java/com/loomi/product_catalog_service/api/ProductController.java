@@ -23,4 +23,9 @@ public class ProductController {
         return ResponseEntity.ok().body(productService.reserveStock(productId, quantity));
     }
 
+    @PatchMapping("/{productId}/update/lote/{quantity}")
+    public ResponseEntity<Boolean> reservePreOrder(@PathVariable String productId, @PathVariable Integer quantity) {
+        return ResponseEntity.ok().body(productService.reservePreOrder(productId, quantity));
+    }
+
 }
