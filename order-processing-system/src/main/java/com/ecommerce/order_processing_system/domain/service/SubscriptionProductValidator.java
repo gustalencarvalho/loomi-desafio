@@ -9,6 +9,7 @@ import com.ecommerce.order_processing_system.dto.OrderResponse;
 import com.ecommerce.order_processing_system.dto.ProductDTO;
 import com.ecommerce.order_processing_system.exception.DuplicateActiveSubscriptionException;
 import com.ecommerce.order_processing_system.exception.SubscriptionLimitExceededException;
+import com.ecommerce.order_processing_system.kafka.KafkaEventPublisher;
 import com.ecommerce.order_processing_system.kafka.events.OrderSchedulingPaymentEvent;
 import com.ecommerce.order_processing_system.service.OrderService;
 import com.ecommerce.order_processing_system.service.ProductService;
@@ -30,7 +31,7 @@ import static com.ecommerce.order_processing_system.domain.ProductType.SUBSCRIPT
 @RequiredArgsConstructor
 public class SubscriptionProductValidator implements ProductValidator {
     private final OrderService orderService;
-    private final ApplicationEventPublisher eventPublisher;
+    private final KafkaEventPublisher eventPublisher;
 
     @Value("${app.order.subscription-limit}")
     private int subscriptionLimit;
@@ -90,7 +91,7 @@ public class SubscriptionProductValidator implements ProductValidator {
                 .collect(Collectors.toList());
 
         log.debug("Validating SUBSCRIPTION successfully productId={} for orderId={}", product.getProductId(), order.getOrderId());
-        eventPublisher.publishEvent(OrderSchedulingPaymentEvent.of(order.getOrderId(), order.getCustomerId(), items, order.getTotalAmount()));
+        eventPublisher.publishSchedulingPayment(OrderSchedulingPaymentEvent.of(order.getOrderId(), order.getCustomerId(), items, order.getTotalAmount()));
     }
 
     public OrderItemResponse toResponseItem(OrderItem orderItem) {

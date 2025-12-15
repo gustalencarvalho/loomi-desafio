@@ -5,6 +5,7 @@ import com.ecommerce.order_processing_system.domain.OrderItem;
 import com.ecommerce.order_processing_system.domain.policy.PhysicalPolicy;
 import com.ecommerce.order_processing_system.dto.ProductDTO;
 import com.ecommerce.order_processing_system.exception.OutOfStockException;
+import com.ecommerce.order_processing_system.kafka.KafkaEventPublisher;
 import com.ecommerce.order_processing_system.kafka.events.LowStockAlertEvent;
 import com.ecommerce.order_processing_system.service.ProductService;
 import org.junit.jupiter.api.BeforeEach;
@@ -12,7 +13,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.math.BigDecimal;
@@ -28,7 +28,7 @@ class PhysicalProductValidatorTest {
     private ProductService productService;
 
     @Mock
-    private ApplicationEventPublisher eventPublisher;
+    private KafkaEventPublisher eventPublisher;
 
     @Mock
     private PhysicalPolicy physicalPolicy;
@@ -122,7 +122,7 @@ class PhysicalProductValidatorTest {
 
         validator.validate(order, item);
 
-        verify(eventPublisher).publishEvent(any(LowStockAlertEvent.class));
+        verify(eventPublisher).publishLowStockAlert(any(LowStockAlertEvent.class));
     }
 
     @Test
