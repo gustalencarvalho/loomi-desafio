@@ -1,4 +1,4 @@
-package com.ecommerce.order_processing_system.kafka;
+package com.ecommerce.order_processing_system.kafka.listener;
 
 import com.ecommerce.order_processing_system.kafka.events.OrderCreatedEvent;
 import com.ecommerce.order_processing_system.kafka.events.OrderProcessedEvent;
@@ -19,8 +19,7 @@ public class OrderEventListener {
 
     @KafkaListener(
             topics = "order-events-created",
-            groupId = "order-processing-group",
-            containerFactory = "orderCreatedKafkaListenerContainerFactory"
+            groupId = "order-processing-group"
     )
     public void onOrderCreated(OrderCreatedEvent event) {
         log.info("Received message from topic=order-events-created: eventType={}, orderId={}",
@@ -43,8 +42,7 @@ public class OrderEventListener {
 
     @KafkaListener(
             topics = "order-events-processed",
-            groupId = "order-processing-group",
-            containerFactory = "orderCreatedKafkaListenerContainerFactory"
+            groupId = "order-processing-group"
     )
     public void onOrderProcessed(OrderProcessedEvent event) {
         log.info("Received message from topic=order-events-processed: eventType={}, orderId={}",
