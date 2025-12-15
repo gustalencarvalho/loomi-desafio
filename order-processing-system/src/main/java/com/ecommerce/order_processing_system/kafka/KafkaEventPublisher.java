@@ -6,6 +6,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.event.TransactionPhase;
+import org.springframework.transaction.event.TransactionalEventListener;
 
 @Slf4j
 @Service
@@ -32,36 +34,42 @@ public class KafkaEventPublisher {
 
     private final KafkaTemplate<String, Object> kafkaTemplate;
 
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void publishCreated(OrderCreatedEvent event) {
         log.info("Publishing OrderCreatedEvent for orderId={} to topic={}", event.getPayload().getOrderId(), topicCreated);
         log.debug("OrderCreatedEvent payload={}", event);
         kafkaTemplate.send(topicCreated, event.getPayload().getOrderId(), event);
     }
 
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void publishProcessed(OrderProcessedEvent event) {
         log.info("Publishing OrderProcessedEvent for orderId={} to topic={}",  event.getPayload().getOrderId(), topicProcessed);
         log.debug("OrderProcessedEvent payload={}", event);
         kafkaTemplate.send(topicProcessed, event.getPayload().getOrderId(), event);
     }
 
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void publishLowStockAlert(LowStockAlertEvent event) {
         log.info("Publishing LowStockAlertEvent for productId={} to topic={}",  event.getPayload().getProductId(), topicLowStock);
         log.debug("LowStockAlertEvent payload={}", event);
         kafkaTemplate.send(topicLowStock, event.getPayload().getProductId(), event);
     }
 
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void publishFraudAlert(OrderFraudEvent event) {
         log.info("Publishing OrderFraudEvent for orderId={} to topic={}",  event.getPayload().getOrderId(), topicFraudAlert);
         log.debug("OrderFraudEvent payload={}", event);
         kafkaTemplate.send(topicFraudAlert, event.getPayload().getOrderId(), event);
     }
 
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void publishSchedulingPayment(OrderSchedulingPaymentEvent event) {
         log.info("Publishing FraudAlert for orderId={} to topic={}",  event.getPayload().getOrderId(), topicSchedulingPayment);
         log.debug("OrderSchedulingPaymentEvent payload={}", event);
         kafkaTemplate.send(topicSchedulingPayment, event.getPayload().getOrderId(), event);
     }
 
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void publishFailed(OrderFailedEvent event) {
         log.warn("Publishing OrderFailedEvent for orderId={} to topic={}", event.getPayload().getOrderId(), topicFailed);
         log.debug("OrderFailedEvent payload={}", event);

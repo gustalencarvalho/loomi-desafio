@@ -9,6 +9,7 @@ import com.ecommerce.order_processing_system.dto.OrderItemResponse;
 import com.ecommerce.order_processing_system.dto.OrderResponse;
 import com.ecommerce.order_processing_system.exception.OrderNotFoundException;
 import com.ecommerce.order_processing_system.exception.OutOfStockException;
+import com.ecommerce.order_processing_system.kafka.KafkaEventPublisher;
 import com.ecommerce.order_processing_system.kafka.events.OrderCreatedEvent;
 import com.ecommerce.order_processing_system.repository.OrderRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -17,6 +18,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronizationAdapter;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -32,7 +35,7 @@ public class OrderService {
     private final OrderRepository orderRepository;
     private final ProductService productService;
     private final ObjectMapper objectMapper;
-    private final ApplicationEventPublisher eventPublisher;
+    private final KafkaEventPublisher eventPublisher;
 
     @Transactional
     public OrderResponse createOrder(CreateOrderRequest request) {
@@ -60,6 +63,7 @@ public class OrderService {
         log.debug("Linked all items to the order");
 
         order = orderRepository.save(order);
+        orderRepository.flush();
         log.info("Order persisted successfully orderId={}", order.getOrderId());
 
         OrderResponse response = toResponse(order);
@@ -72,7 +76,7 @@ public class OrderService {
                 response.getTotalAmount()
         );
 
-        eventPublisher.publishEvent(event);
+        publishEventAfterCommit(event);
 
         var responseOrder = OrderResponse.builder()
                 .orderId(response.getOrderId())
@@ -182,4 +186,20 @@ public class OrderService {
                 .metadata(orderItem.getMetadata())
                 .build();
     }
+
+    protected void publishEventAfterCommit(OrderCreatedEvent event) {
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(
+                    new TransactionSynchronizationAdapter() {
+                        @Override
+                        public void afterCommit() {
+                            eventPublisher.publishCreated(event);
+                        }
+                    }
+            );
+        } else {
+            eventPublisher.publishCreated(event);
+        }
+    }
+
 }
