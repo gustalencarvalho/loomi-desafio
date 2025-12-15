@@ -9,6 +9,7 @@ import com.ecommerce.order_processing_system.dto.OrderResponse;
 import com.ecommerce.order_processing_system.dto.ProductDTO;
 import com.ecommerce.order_processing_system.exception.DuplicateActiveSubscriptionException;
 import com.ecommerce.order_processing_system.exception.SubscriptionLimitExceededException;
+import com.ecommerce.order_processing_system.kafka.KafkaEventPublisher;
 import com.ecommerce.order_processing_system.kafka.events.OrderSchedulingPaymentEvent;
 import com.ecommerce.order_processing_system.service.OrderService;
 import com.ecommerce.order_processing_system.service.ProductService;
@@ -36,7 +37,7 @@ class SubscriptionProductValidatorTest {
     private OrderService orderService;
 
     @Mock
-    private ApplicationEventPublisher eventPublisher;
+    private KafkaEventPublisher eventPublisher;
 
     @Mock
     private ProductService productService;
@@ -101,7 +102,7 @@ class SubscriptionProductValidatorTest {
                 () -> validator.validate(order, item)
         );
 
-        verify(eventPublisher, never()).publishEvent(any());
+        verify(eventPublisher, never()).publishFailed(any());
     }
 
     @Test
@@ -170,6 +171,6 @@ class SubscriptionProductValidatorTest {
                 .validate(anySet(), anySet());
 
         verify(eventPublisher)
-                .publishEvent(any(OrderSchedulingPaymentEvent.class));
+                .publishSchedulingPayment(any(OrderSchedulingPaymentEvent.class));
     }
 }

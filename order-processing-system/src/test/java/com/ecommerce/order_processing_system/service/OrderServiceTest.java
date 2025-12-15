@@ -8,6 +8,7 @@ import com.ecommerce.order_processing_system.dto.OrderResponse;
 import com.ecommerce.order_processing_system.dto.ProductDTO;
 import com.ecommerce.order_processing_system.exception.OrderNotFoundException;
 import com.ecommerce.order_processing_system.exception.OutOfStockException;
+import com.ecommerce.order_processing_system.kafka.KafkaEventPublisher;
 import com.ecommerce.order_processing_system.kafka.events.OrderCreatedEvent;
 import com.ecommerce.order_processing_system.repository.OrderRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -18,6 +19,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -28,6 +30,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
+@Transactional
 class OrderServiceTest {
 
     @Mock
@@ -40,7 +43,7 @@ class OrderServiceTest {
     private ObjectMapper objectMapper;
 
     @Mock
-    private ApplicationEventPublisher eventPublisher;
+    private KafkaEventPublisher eventPublisher;
 
     @InjectMocks
     private OrderService orderService;
@@ -67,22 +70,31 @@ class OrderServiceTest {
         request.setCustomerId("CUSTOMER-1");
         request.setItems(List.of(itemRequest));
 
+        // Mock do productService
         when(productService.getProductOrThrow("PROD-1")).thenReturn(product);
+
+        // Mock do save
         when(orderRepository.save(any(Order.class))).thenAnswer(invocation -> {
             Order saved = invocation.getArgument(0);
             saved.setOrderId("ORDER-1");
             return saved;
         });
 
+        // Mock do flush (não faz nada, só para não lançar exceção)
+        doNothing().when(orderRepository).flush();
+
         OrderResponse response = orderService.createOrder(request);
 
+        // Validações
         assertNotNull(response);
         assertEquals("ORDER-1", response.getOrderId());
         assertEquals(PENDING, response.getStatus());
         assertEquals(new BigDecimal("20"), response.getTotalAmount());
 
+        // Verifica interações
         verify(orderRepository).save(any(Order.class));
-        verify(eventPublisher).publishEvent(any(OrderCreatedEvent.class));
+        verify(orderRepository).flush();
+        verify(eventPublisher).publishCreated(any(OrderCreatedEvent.class));
     }
 
     @Test

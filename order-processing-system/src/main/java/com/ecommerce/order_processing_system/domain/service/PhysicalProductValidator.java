@@ -5,6 +5,7 @@ import com.ecommerce.order_processing_system.domain.OrderItem;
 import com.ecommerce.order_processing_system.domain.policy.PhysicalPolicy;
 import com.ecommerce.order_processing_system.dto.ProductDTO;
 import com.ecommerce.order_processing_system.exception.OutOfStockException;
+import com.ecommerce.order_processing_system.kafka.KafkaEventPublisher;
 import com.ecommerce.order_processing_system.kafka.events.LowStockAlertEvent;
 import com.ecommerce.order_processing_system.service.ProductService;
 import lombok.RequiredArgsConstructor;
@@ -23,7 +24,7 @@ import static com.ecommerce.order_processing_system.domain.OrderStatus.OUT_OF_ST
 public class PhysicalProductValidator implements ProductValidator {
 
     private final ProductService productService;
-    private final ApplicationEventPublisher eventPublisher;
+    private final KafkaEventPublisher eventPublisher;
     private final PhysicalPolicy physicalPolicy;
 
     @Value("${app.order.stock-zero}")
@@ -60,7 +61,7 @@ public class PhysicalProductValidator implements ProductValidator {
                     product.getProductId(),
                     newStock
             );
-            eventPublisher.publishEvent(lowStockAlertEvent);
+            eventPublisher.publishLowStockAlert(lowStockAlertEvent);
         }
 
         log.info("Quantity stock now after reserve {} ", newStock);

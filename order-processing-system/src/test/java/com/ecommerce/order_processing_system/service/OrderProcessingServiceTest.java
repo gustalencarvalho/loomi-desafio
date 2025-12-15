@@ -7,6 +7,7 @@ import com.ecommerce.order_processing_system.domain.ProductType;
 import com.ecommerce.order_processing_system.domain.service.ProductValidator;
 import com.ecommerce.order_processing_system.domain.service.ProductValidatorFactory;
 import com.ecommerce.order_processing_system.exception.OrderNotFoundException;
+import com.ecommerce.order_processing_system.kafka.KafkaEventPublisher;
 import com.ecommerce.order_processing_system.kafka.events.OrderFailedEvent;
 import com.ecommerce.order_processing_system.kafka.events.OrderProcessedEvent;
 import com.ecommerce.order_processing_system.repository.OrderRepository;
@@ -37,7 +38,7 @@ class OrderProcessingServiceTest {
     private ProductValidatorFactory validatorFactory;
 
     @Mock
-    private ApplicationEventPublisher eventPublisher;
+    private KafkaEventPublisher eventPublisher;
 
     @Mock
     private ProductValidator productValidator;
@@ -71,8 +72,8 @@ class OrderProcessingServiceTest {
 
         assertEquals(OrderStatus.PROCESSED, order.getStatus());
         verify(productValidator).validate(order, item);
-        verify(eventPublisher).publishEvent(any(OrderProcessedEvent.class));
-        verify(eventPublisher, never()).publishEvent(any(OrderFailedEvent.class));
+        verify(eventPublisher).publishProcessed(any(OrderProcessedEvent.class));
+        verify(eventPublisher, never()).publishFailed(any(OrderFailedEvent.class));
     }
 
     @Test
@@ -98,7 +99,7 @@ class OrderProcessingServiceTest {
         service.process("ORDER-1");
 
         assertEquals(OrderStatus.FAILED, order.getStatus());
-        verify(eventPublisher).publishEvent(any(OrderFailedEvent.class));
-        verify(eventPublisher, never()).publishEvent(any(OrderProcessedEvent.class));
+        verify(eventPublisher).publishFailed(any(OrderFailedEvent.class));
+        verify(eventPublisher, never()).publishProcessed(any(OrderProcessedEvent.class));
     }
 }
