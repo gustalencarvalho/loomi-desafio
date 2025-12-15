@@ -37,7 +37,6 @@ public class GlobalExceptionHandler {
     ProblemDetail handleProductNotFoundException(final ProductNotFoundException ex, final HttpServletRequest request) {
         ProblemDetail problem = ProblemDetail.forStatus(NOT_FOUND);
         problem.setType(URI.create(request.getContextPath()));
-        problem.setTitle("Product");
         problem.setDetail(ex.getMessage());
         problem.setProperty("timestamp", Instant.now());
         return problem;
@@ -47,7 +46,6 @@ public class GlobalExceptionHandler {
     ProblemDetail handleOrderNotFoundException(final OrderNotFoundException ex, final HttpServletRequest request) {
         ProblemDetail problem = ProblemDetail.forStatus(NOT_FOUND);
         problem.setType(URI.create(request.getContextPath()));
-        problem.setTitle("Order");
         problem.setDetail(ex.getMessage());
         problem.setProperty("timestamp", Instant.now());
         return problem;
@@ -57,7 +55,6 @@ public class GlobalExceptionHandler {
     ProblemDetail handleProductIsNotAvailableException(final ProductIsNotAvailableException ex, final HttpServletRequest request) {
         ProblemDetail problem = ProblemDetail.forStatus(BAD_REQUEST);
         problem.setType(URI.create(request.getContextPath()));
-        problem.setTitle("OUT_OF_STOCK");
         problem.setDetail(ex.getMessage());
         problem.setProperty("timestamp", Instant.now());
         return problem;
@@ -67,7 +64,6 @@ public class GlobalExceptionHandler {
     ProblemDetail handleQuantityInvalidException(final QuantityInvalidException ex, final HttpServletRequest request) {
         ProblemDetail problem = ProblemDetail.forStatus(BAD_REQUEST);
         problem.setType(URI.create(request.getContextPath()));
-        problem.setTitle("OUT_OF_STOCK");
         problem.setDetail(ex.getMessage());
         problem.setProperty("timestamp", Instant.now());
         return problem;
@@ -77,7 +73,6 @@ public class GlobalExceptionHandler {
     ProblemDetail handleErrorSystemException(final ErrorSystemDefaultException ex, final HttpServletRequest request) {
         ProblemDetail problem = ProblemDetail.forStatus(INTERNAL_SERVER_ERROR);
         problem.setType(URI.create(request.getContextPath()));
-        problem.setTitle(INTERNAL_SERVER_ERROR.name());
         problem.setDetail(ex.getMessage());
         problem.setProperty("timestamp", Instant.now());
         return problem;
@@ -87,7 +82,6 @@ public class GlobalExceptionHandler {
     ProblemDetail handleOutOfStockExpcetion(final OutOfStockException ex, final HttpServletRequest request) {
         ProblemDetail problem = ProblemDetail.forStatus(BAD_REQUEST);
         problem.setType(URI.create(request.getContextPath()));
-        problem.setTitle("OUT_OF_STOCK");
         problem.setDetail(ex.getMessage());
         problem.setProperty("timestamp", Instant.now());
         return problem;
@@ -97,7 +91,6 @@ public class GlobalExceptionHandler {
     ProblemDetail handleWareHouseUnaivalableException(final WarehouseUnavailableException ex, final HttpServletRequest request) {
         ProblemDetail problem = ProblemDetail.forStatus(INTERNAL_SERVER_ERROR);
         problem.setType(URI.create(request.getContextPath()));
-        problem.setTitle("WAREHOUSE_UNAVAILABLE");
         problem.setDetail(ex.getMessage());
         problem.setProperty("timestamp", Instant.now());
         return problem;
@@ -107,7 +100,6 @@ public class GlobalExceptionHandler {
     ProblemDetail handleSubscriptionLimitExceededException(final SubscriptionLimitExceededException ex, final HttpServletRequest request) {
         ProblemDetail problem = ProblemDetail.forStatus(BAD_REQUEST);
         problem.setType(URI.create(request.getContextPath()));
-        problem.setTitle("SUBSCRIPTION_LIMIT_EXCEEDED");
         problem.setDetail(ex.getMessage());
         problem.setProperty("timestamp", Instant.now());
         return problem;
@@ -127,7 +119,6 @@ public class GlobalExceptionHandler {
     ProblemDetail handleIncompatibleSubscriptionsException(final IncompatibleSubscriptionsException ex, final HttpServletRequest request) {
         ProblemDetail problem = ProblemDetail.forStatus(BAD_REQUEST);
         problem.setType(URI.create(request.getContextPath()));
-        problem.setTitle("INCOMPATIBLE_SUBSCRIPTIONS");
         problem.setDetail(ex.getMessage());
         problem.setProperty("timestamp", Instant.now());
         return problem;
@@ -137,7 +128,6 @@ public class GlobalExceptionHandler {
     ProblemDetail handleFraudDetectedException(final FraudDetectedException ex, final HttpServletRequest request) {
         ProblemDetail problem = ProblemDetail.forStatus(BAD_REQUEST);
         problem.setType(URI.create(request.getContextPath()));
-        problem.setTitle("FRAUD_ALERT");
         problem.setDetail(ex.getMessage());
         problem.setProperty("timestamp", Instant.now());
         return problem;
@@ -147,7 +137,6 @@ public class GlobalExceptionHandler {
     ProblemDetail handleFeignException(final FeignException ex, final HttpServletRequest request) {
         ProblemDetail problem = ProblemDetail.forStatus(NOT_FOUND);
         problem.setType(URI.create(request.getContextPath()));
-        problem.setTitle(NOT_FOUND.name());
         problem.setDetail("Product not found or inactive");
         problem.setProperty("timestamp", Instant.now());
         return problem;
@@ -157,7 +146,6 @@ public class GlobalExceptionHandler {
     ProblemDetail handleLicenseUnavailableException(final LicenseUnavailableException ex, final HttpServletRequest request) {
         ProblemDetail problem = ProblemDetail.forStatus(BAD_REQUEST);
         problem.setType(URI.create(request.getContextPath()));
-        problem.setTitle("LICENSE_UNAVAILABLE");
         problem.setDetail(ex.getMessage());
         problem.setProperty("timestamp", Instant.now());
         return problem;
@@ -167,7 +155,6 @@ public class GlobalExceptionHandler {
     ProblemDetail handleAlreadyOwnedDigitalProductException(final AlreadyOwnedDigitalProductException ex, final HttpServletRequest request) {
         ProblemDetail problem = ProblemDetail.forStatus(BAD_REQUEST);
         problem.setType(URI.create(request.getContextPath()));
-        problem.setTitle("ALREADY_OWNED");
         problem.setDetail(ex.getMessage());
         problem.setProperty("timestamp", Instant.now());
         return problem;
@@ -177,7 +164,6 @@ public class GlobalExceptionHandler {
     ProblemDetail handleReleaseDatePassedException(final ReleaseDatePassedException ex, final HttpServletRequest request) {
         ProblemDetail problem = ProblemDetail.forStatus(BAD_REQUEST);
         problem.setType(URI.create(request.getContextPath()));
-        problem.setTitle("RELEASE_DATE_PASSED");
         problem.setDetail(ex.getMessage());
         problem.setProperty("timestamp", Instant.now());
         return problem;
@@ -187,7 +173,6 @@ public class GlobalExceptionHandler {
     ProblemDetail handleCreditLimitExceededException(final CreditLimitExceededException ex, final HttpServletRequest request) {
         ProblemDetail problem = ProblemDetail.forStatus(BAD_REQUEST);
         problem.setType(URI.create(request.getContextPath()));
-        problem.setTitle("CREDIT_LIMIT_EXCEEDED");
         problem.setDetail(ex.getMessage());
         problem.setProperty("timestamp", Instant.now());
         return problem;
@@ -197,7 +182,6 @@ public class GlobalExceptionHandler {
     ProblemDetail handlePreOrderSoldOutException(final PreOrderSoldOutException ex, final HttpServletRequest request) {
         ProblemDetail problem = ProblemDetail.forStatus(BAD_REQUEST);
         problem.setType(URI.create(request.getContextPath()));
-        problem.setTitle("PRE_ORDER_SOLD_OUT");
         problem.setDetail(ex.getMessage());
         problem.setProperty("timestamp", Instant.now());
         return problem;
@@ -207,7 +191,6 @@ public class GlobalExceptionHandler {
     ProblemDetail handleInvalidCorporateDataException(final InvalidCorporateDataException ex, final HttpServletRequest request) {
         ProblemDetail problem = ProblemDetail.forStatus(BAD_REQUEST);
         problem.setType(URI.create(request.getContextPath()));
-        problem.setTitle("INVALID_CORPORATE_DATA");
         problem.setDetail(ex.getMessage());
         problem.setProperty("timestamp", Instant.now());
         return problem;
@@ -217,7 +200,6 @@ public class GlobalExceptionHandler {
     ProblemDetail handleInvalidPaymentTermsException(final InvalidPaymentTermsException ex, final HttpServletRequest request) {
         ProblemDetail problem = ProblemDetail.forStatus(BAD_REQUEST);
         problem.setType(URI.create(request.getContextPath()));
-        problem.setTitle("INVALID_PAYMENT_TERMS");
         problem.setDetail(ex.getMessage());
         problem.setProperty("timestamp", Instant.now());
         return problem;
@@ -227,7 +209,6 @@ public class GlobalExceptionHandler {
     ProblemDetail handleUnsupportedOperationException(final UnsupportedOperationException ex, final HttpServletRequest request) {
         ProblemDetail problem = ProblemDetail.forStatus(BAD_REQUEST);
         problem.setType(URI.create(request.getContextPath()));
-        problem.setTitle("VALIDATOR");
         problem.setDetail(ex.getMessage());
         problem.setProperty("timestamp", Instant.now());
         return problem;
