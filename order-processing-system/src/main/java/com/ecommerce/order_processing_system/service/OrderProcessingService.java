@@ -9,6 +9,7 @@ import com.ecommerce.order_processing_system.exception.FraudDetectedException;
 import com.ecommerce.order_processing_system.exception.OrderNotFoundException;
 import com.ecommerce.order_processing_system.kafka.KafkaEventPublisher;
 import com.ecommerce.order_processing_system.kafka.events.OrderFailedEvent;
+import com.ecommerce.order_processing_system.kafka.events.OrderFraudEvent;
 import com.ecommerce.order_processing_system.kafka.events.OrderProcessedEvent;
 import com.ecommerce.order_processing_system.repository.OrderRepository;
 import lombok.RequiredArgsConstructor;
@@ -52,6 +53,7 @@ public class OrderProcessingService {
             order.setStatus(OrderStatus.PROCESSED);
             eventPublisher.publishProcessed(OrderProcessedEvent.of(orderId));
         } catch (RuntimeException e) {
+            order.setFailureReason(e.getMessage());
             order.setStatus(OrderStatus.FAILED);
             eventPublisher.publishFailed(OrderFailedEvent.of(orderId, e.getMessage()));
         }
@@ -68,6 +70,7 @@ public class OrderProcessingService {
             log.info("Running probabilistic fraud check for orderId={}", order.getOrderId());
             if (new Random().nextDouble() < 0.05) {
                 log.error("Fraud check FAILED for orderId={}", order.getOrderId());
+                eventPublisher.publishFraudAlert(OrderFraudEvent.of(order.getOrderId(), order.getFailureReason()));
                 throw new FraudDetectedException(FRAUD_DETECTED);
             }
 

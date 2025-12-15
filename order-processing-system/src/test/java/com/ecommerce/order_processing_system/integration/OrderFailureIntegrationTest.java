@@ -7,12 +7,14 @@ import com.ecommerce.order_processing_system.dto.CreateOrderItemRequest;
 import com.ecommerce.order_processing_system.dto.CreateOrderRequest;
 import com.ecommerce.order_processing_system.dto.OrderResponse;
 import com.ecommerce.order_processing_system.dto.ProductDTO;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.PostgreSQLContainer;
@@ -33,38 +35,24 @@ import static org.mockito.Mockito.when;
 
 @Testcontainers
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-class OrderFailureIntegrationTest {
-
-    @Container
-    static RedpandaContainer redpanda =
-            new RedpandaContainer("docker.redpanda.com/redpandadata/redpanda:v23.3.10");
-
-    @Container
-    static PostgreSQLContainer<?> orderPostgres = new PostgreSQLContainer<>("postgres:16-alpine")
-            .withDatabaseName("order_processing_db")
-            .withUsername("postgres")
-            .withPassword("15421542");
-
-    @DynamicPropertySource
-    static void configureProps(DynamicPropertyRegistry registry) {
-        // Postgres (se estiver usando container)
-        registry.add("spring.datasource.url", orderPostgres::getJdbcUrl);
-        registry.add("spring.datasource.username", orderPostgres::getUsername);
-        registry.add("spring.datasource.password", orderPostgres::getPassword);
-
-        // Kafka: sobrescreve exatamente spring.kafka.bootstrap-servers
-        registry.add("spring.kafka.bootstrap-servers", redpanda::getBootstrapServers);
-
-        // Tópicos (batendo com o @KafkaListener e publisher)
-        registry.add("app.order.topic.created", () -> "order-events-created");
-        registry.add("app.order.topic.processed", () -> "order-events-processed");
-    }
+class OrderFailureIntegrationTest extends BaseIntegrationTest {
 
     @Autowired
     private TestRestTemplate restTemplate;
 
     @MockBean
     private ProductCatalogClient productCatalogClient;
+
+    @BeforeEach
+    void configureRestTemplateTimeout() {
+        // ✅ Aumenta timeout para 60s
+        restTemplate.getRestTemplate().setRequestFactory(
+                new SimpleClientHttpRequestFactory() {{
+                    setConnectTimeout(30000);  // 30s connect
+                    setReadTimeout(60000);     // 60s read
+                }}
+        );
+    }
 
     @Test
     void shouldFailOrderWhenProductIsInactive() {
@@ -113,7 +101,7 @@ class OrderFailureIntegrationTest {
                 .name("PS6 Pre-order")
                 .price(new BigDecimal("599.99"))
                 .stockQuantity(5)
-                .active(false)        // ❌ inativo no processamento
+                .active(false)
                 .productType(ProductType.PHYSICAL)
                 .metadata(Map.of("releaseDate", "2025-11-15"))
                 .build();

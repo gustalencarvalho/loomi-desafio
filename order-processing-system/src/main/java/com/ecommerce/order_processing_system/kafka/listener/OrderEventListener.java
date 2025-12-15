@@ -14,7 +14,7 @@ import org.springframework.stereotype.Component;
 public class OrderEventListener {
 
     private final OrderProcessingService processingService;
-    private static final String ORDER_CREATED = "ORDER_CREATED";
+    private static final String ORDER_CREATED = "CREATED";
     private static final String ORDER_PROCESSED = "ORDER_PROCESSED";
 
     @KafkaListener(

@@ -8,6 +8,8 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
+import static com.ecommerce.order_processing_system.domain.OrderStatus.CREATED;
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -36,7 +38,7 @@ public class OrderCreatedEvent {
                                        BigDecimal total) {
         return OrderCreatedEvent.builder()
                 .eventId(UUID.randomUUID().toString())
-                .eventType("ORDER_CREATED")
+                .eventType(CREATED.name())
                 .timestamp(Instant.now().toString())
                 .payload(Payload.builder()
                         .orderId(orderId)
