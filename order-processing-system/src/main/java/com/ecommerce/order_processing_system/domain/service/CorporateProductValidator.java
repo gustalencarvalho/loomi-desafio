@@ -36,19 +36,28 @@ public class CorporateProductValidator implements ProductValidator {
     public void validate(Order order, OrderItem item) {
         log.debug("Validating CORPORATE productId={} for orderId={} quantity={}", item.getProductId(), order.getOrderId(), item.getQuantity());
 
-        Optional<String> firstCnpj = order.getItems().stream()
+        boolean hasInvalidMetadata = order.getItems().stream()
+                .anyMatch(i -> i.getMetadata() == null);
+
+        if (hasInvalidMetadata) {
+            throw new InvalidCorporateDataException(INVALID_CORPORATE_DATA);
+        }
+
+        String cnpj = order.getItems().stream()
                 .map(OrderItem::getMetadata)
+                .filter(Objects::nonNull)
                 .map(metadata -> metadata.get("cnpj"))
                 .filter(Objects::nonNull)
                 .map(Object::toString)
-                .findFirst();
+                .findFirst()
+                .orElseThrow(() ->
+                        new InvalidCorporateDataException(INVALID_CORPORATE_DATA)
+                );
 
-        firstCnpj.ifPresent(cnpj -> {
-            if (!CnpjValidator.isValidCnpj(cnpj)) {
-                log.info("CNPJ invalid: {}", cnpj);
-                throw new InvalidCorporateDataException(INVALID_CORPORATE_DATA);
-            }
-        });
+        if (!CnpjValidator.isValidCnpj(cnpj)) {
+            throw new InvalidCorporateDataException(INVALID_CORPORATE_DATA);
+        }
+
 
         if (order.getTotalAmount().compareTo(new BigDecimal("100000")) > 0) {
             log.error("CREDIT_LIMIT_EXCEEDED for orderId={}", order.getOrderId());
@@ -72,6 +81,7 @@ public class CorporateProductValidator implements ProductValidator {
 
         Optional<String> paymentTerms = order.getItems().stream()
                 .map(OrderItem::getMetadata)
+                .filter(Objects::nonNull)
                 .map(metadata -> metadata.get("paymentTerms"))
                 .filter(Objects::nonNull)
                 .map(Object::toString)

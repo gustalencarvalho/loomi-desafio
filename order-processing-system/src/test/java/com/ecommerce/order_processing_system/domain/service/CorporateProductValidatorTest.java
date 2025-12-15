@@ -19,6 +19,8 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
@@ -97,4 +99,98 @@ class CorporateProductValidatorTest {
         validator.validate(order, item);
         verify(corporatePolicy).calculateTermsPayment("NET_30");
     }
+
+    @Test
+    void shouldThrowExceptionWhenMetadataIsNull() {
+        item.setMetadata(null);
+
+        assertThrows(
+                InvalidCorporateDataException.class,
+                () -> validator.validate(order, item)
+        );
+    }
+
+    @Test
+    void shouldThrowExceptionWhenCnpjIsMissing() {
+        item.getMetadata().remove("cnpj");
+
+        assertThrows(
+                InvalidCorporateDataException.class,
+                () -> validator.validate(order, item)
+        );
+    }
+
+    @Test
+    void shouldNotApplyDiscountWhenVolumeBelowThreshold() {
+        // quantidade total = 6 < 10
+        validator.validate(order, item);
+
+        assertEquals(new BigDecimal("1000.00"), order.getTotalAmount());
+    }
+
+    @Test
+    void shouldNotCallCorporatePolicyWhenPaymentTermsNotPresent() {
+        item.getMetadata().remove("paymentTerms");
+
+        validator.validate(order, item);
+
+        verify(corporatePolicy, never())
+                .calculateTermsPayment(any());
+    }
+
+    @Test
+    void shouldValidateCorporateOrderSuccessfully() {
+        validator.validate(order, item);
+
+        assertEquals("ORDER-1", order.getOrderId());
+    }
+
+    @Test
+    void shouldNotApplyDiscountWhenVolumeEqualsThreshold() {
+        OrderItem item2 = OrderItem.builder()
+                .quantity(4) // 6 + 4 = 10
+                .metadata(Map.of("cnpj", "11222333000181"))
+                .build();
+
+        order.setItems(List.of(item, item2));
+
+        validator.validate(order, item);
+
+        assertEquals(new BigDecimal("1000.00"), order.getTotalAmount());
+    }
+
+    @Test
+    void shouldThrowExceptionWhenAnyItemHasNullMetadata() {
+        item.setMetadata(null);
+
+        assertThrows(
+                InvalidCorporateDataException.class,
+                () -> validator.validate(order, item)
+        );
+    }
+
+    @Test
+    void shouldNotApplyDiscountWhenQuantityBelowThreshold() {
+        validator.validate(order, item);
+
+        assertEquals(
+                0,
+                order.getTotalAmount().compareTo(new BigDecimal("1000.00"))
+        );
+    }
+
+    @Test
+    void shouldNotCallCorporatePolicyWhenPaymentTermsIsMissing() {
+        item.getMetadata().remove("paymentTerms");
+
+        validator.validate(order, item);
+
+        verify(corporatePolicy, never()).calculateTermsPayment(any());
+    }
+
+    @Test
+    void shouldValidateCorporateOrderWithoutDiscount() {
+        validator.validate(order, item);
+    }
+
 }

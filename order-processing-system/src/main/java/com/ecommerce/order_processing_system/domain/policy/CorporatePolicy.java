@@ -9,8 +9,8 @@ import java.time.LocalDate;
 
 import static com.ecommerce.order_processing_system.domain.OrderStatus.INVALID_PAYMENT_TERMS;
 
-@Component
 @Slf4j
+@Component
 @RequiredArgsConstructor
 public class CorporatePolicy {
 
