@@ -5,33 +5,22 @@ import com.ecommerce.order_processing_system.domain.OrderItem;
 import com.ecommerce.order_processing_system.domain.OrderStatus;
 import com.ecommerce.order_processing_system.domain.service.ProductValidator;
 import com.ecommerce.order_processing_system.domain.service.ProductValidatorFactory;
-import com.ecommerce.order_processing_system.dto.OrderItemResponse;
-import com.ecommerce.order_processing_system.dto.OrderResponse;
-import com.ecommerce.order_processing_system.dto.ProductDTO;
-import com.ecommerce.order_processing_system.exception.*;
-import com.ecommerce.order_processing_system.kafka.events.LowStockAlertEvent;
+import com.ecommerce.order_processing_system.exception.FraudDetectedException;
+import com.ecommerce.order_processing_system.exception.OrderNotFoundException;
+import com.ecommerce.order_processing_system.kafka.KafkaEventPublisher;
 import com.ecommerce.order_processing_system.kafka.events.OrderFailedEvent;
 import com.ecommerce.order_processing_system.kafka.events.OrderProcessedEvent;
-import com.ecommerce.order_processing_system.kafka.events.OrderSchedulingPaymentEvent;
 import com.ecommerce.order_processing_system.repository.OrderRepository;
-import com.ecommerce.order_processing_system.util.CnpjValidator;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.Random;
 
-import static com.ecommerce.order_processing_system.domain.OrderStatus.*;
-import static com.ecommerce.order_processing_system.domain.ProductType.SUBSCRIPTION;
+import static com.ecommerce.order_processing_system.domain.OrderStatus.FRAUD_DETECTED;
 
 @Slf4j
 @Service
@@ -39,7 +28,7 @@ import static com.ecommerce.order_processing_system.domain.ProductType.SUBSCRIPT
 public class OrderProcessingService {
     private final OrderRepository repository;
     private final ProductValidatorFactory validatorFactory;
-    private final ApplicationEventPublisher eventPublisher;
+    private final KafkaEventPublisher eventPublisher;
 
     @Value("${app.order.high-value-threshold}")
     private BigDecimal highValueThreshold;
@@ -51,9 +40,9 @@ public class OrderProcessingService {
     public void process(String orderId) {
         Order order = repository.findById(orderId)
                 .orElseThrow(() -> new OrderNotFoundException(orderId));
+        validateGlobal(order);
 
         try {
-            validateGlobal(order);
 
             for (OrderItem item : order.getItems()) {
                 ProductValidator validator = validatorFactory.getValidator(item.getProductType());
@@ -61,10 +50,10 @@ public class OrderProcessingService {
             }
 
             order.setStatus(OrderStatus.PROCESSED);
-            eventPublisher.publishEvent(OrderProcessedEvent.of(orderId));
+            eventPublisher.publishProcessed(OrderProcessedEvent.of(orderId));
         } catch (RuntimeException e) {
             order.setStatus(OrderStatus.FAILED);
-            eventPublisher.publishEvent(OrderFailedEvent.of(orderId, e.getMessage()));
+            eventPublisher.publishFailed(OrderFailedEvent.of(orderId, e.getMessage()));
         }
     }
 
