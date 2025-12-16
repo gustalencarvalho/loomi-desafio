@@ -5,7 +5,7 @@ import com.ecommerce.order_processing_system.domain.OrderItem;
 import com.ecommerce.order_processing_system.domain.policy.PhysicalPolicy;
 import com.ecommerce.order_processing_system.dto.ProductDTO;
 import com.ecommerce.order_processing_system.exception.OutOfStockException;
-import com.ecommerce.order_processing_system.kafka.KafkaEventPublisher;
+import com.ecommerce.order_processing_system.kafka.producer.KafkaEventPublisher;
 import com.ecommerce.order_processing_system.kafka.events.LowStockAlertEvent;
 import com.ecommerce.order_processing_system.service.ProductService;
 import org.junit.jupiter.api.BeforeEach;
@@ -133,12 +133,12 @@ class PhysicalProductValidatorTest {
         when(productService.updateStock("PROD-1", 8))
                 .thenReturn(true);
 
-        when(physicalPolicy.calculateDeliveryDate(order, product))
+        when(physicalPolicy.calculateDeliveryDate(order))
                 .thenReturn(LocalDateTime.now().plusDays(5));
 
         validator.validate(order, item);
 
         verify(physicalPolicy).paymentCarriedOut(order.getTotalAmount());
-        verify(physicalPolicy).calculateDeliveryDate(order, product);
+        verify(physicalPolicy).calculateDeliveryDate(order);
     }
 }

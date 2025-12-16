@@ -34,10 +34,11 @@ app:
     url: ${PRODUCT_CATALOG_URL:http://localhost:8081}
   order:
     alert-stock-low: 5
-    high-value-threshold: 10000
+    high-value-threshold: 100000
     fraud-check-threshold: 20000
     subscription-limit: 5
     stock-zero: 0
+    slot-limit: 1000
     corporate-approval-threshold: 50000
     corporate-volume-discount-threshold: 100
     corporate-discount: 0.15
@@ -48,6 +49,7 @@ app:
       low-stock: order-events-low-stock
       fraud-alert: order-events-fraud-alert
       scheguling-payment: order-events-scheguling-payment
+      pending-approval: order-events-pending-approval
 
 logging:
   level:

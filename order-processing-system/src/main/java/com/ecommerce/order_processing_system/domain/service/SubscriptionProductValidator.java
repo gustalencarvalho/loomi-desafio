@@ -9,14 +9,13 @@ import com.ecommerce.order_processing_system.dto.OrderResponse;
 import com.ecommerce.order_processing_system.dto.ProductDTO;
 import com.ecommerce.order_processing_system.exception.DuplicateActiveSubscriptionException;
 import com.ecommerce.order_processing_system.exception.SubscriptionLimitExceededException;
-import com.ecommerce.order_processing_system.kafka.KafkaEventPublisher;
+import com.ecommerce.order_processing_system.kafka.producer.KafkaEventPublisher;
 import com.ecommerce.order_processing_system.kafka.events.OrderSchedulingPaymentEvent;
 import com.ecommerce.order_processing_system.service.OrderService;
 import com.ecommerce.order_processing_system.service.ProductService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -69,7 +68,7 @@ public class SubscriptionProductValidator implements ProductValidator {
 
         if (hasDuplicateActiveSubscription) {
             log.info("Duplicate active subscription for product {} ", hasDuplicateActiveSubscription);
-            throw new DuplicateActiveSubscriptionException(DUPLICATE_ACTIVE_SUBSCRIPTION);
+            throw new DuplicateActiveSubscriptionException(INCOMPATIBLE_SUBSCRIPTIONS);
         }
 
         Set<String> currentSubscriptions = order.getItems().stream()

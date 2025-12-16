@@ -9,7 +9,7 @@ import com.ecommerce.order_processing_system.dto.OrderResponse;
 import com.ecommerce.order_processing_system.dto.ProductDTO;
 import com.ecommerce.order_processing_system.exception.DuplicateActiveSubscriptionException;
 import com.ecommerce.order_processing_system.exception.SubscriptionLimitExceededException;
-import com.ecommerce.order_processing_system.kafka.KafkaEventPublisher;
+import com.ecommerce.order_processing_system.kafka.producer.KafkaEventPublisher;
 import com.ecommerce.order_processing_system.kafka.events.OrderSchedulingPaymentEvent;
 import com.ecommerce.order_processing_system.service.OrderService;
 import com.ecommerce.order_processing_system.service.ProductService;
@@ -18,7 +18,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.math.BigDecimal;

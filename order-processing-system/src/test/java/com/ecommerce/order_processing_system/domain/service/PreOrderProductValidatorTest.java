@@ -2,6 +2,7 @@ package com.ecommerce.order_processing_system.domain.service;
 
 import com.ecommerce.order_processing_system.domain.Order;
 import com.ecommerce.order_processing_system.domain.OrderItem;
+import com.ecommerce.order_processing_system.domain.policy.PreOrderPolicy;
 import com.ecommerce.order_processing_system.exception.PreOrderSoldOutException;
 import com.ecommerce.order_processing_system.exception.ReleaseDatePassedException;
 import com.ecommerce.order_processing_system.service.ProductService;
@@ -28,6 +29,9 @@ class PreOrderProductValidatorTest {
     @Mock
     private ProductService productService;
 
+    @Mock
+    private PreOrderPolicy preOrderPolicy;
+
     private PreOrderProductValidator validator;
 
     private Order order;
@@ -35,7 +39,7 @@ class PreOrderProductValidatorTest {
 
     @BeforeEach
     void setUp() {
-        validator = new PreOrderProductValidator(productService);
+        validator = new PreOrderProductValidator(productService, preOrderPolicy);
 
         item = OrderItem.builder()
                 .productId("PRE-1")

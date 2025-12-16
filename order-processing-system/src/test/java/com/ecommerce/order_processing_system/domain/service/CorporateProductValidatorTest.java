@@ -41,6 +41,7 @@ class CorporateProductValidatorTest {
         // simula @Value
         ReflectionTestUtils.setField(validator, "orporateVolumeThreshold", 10);
         ReflectionTestUtils.setField(validator, "corporateDiscount", "0.10");
+        ReflectionTestUtils.setField(validator, "highValueThreshold", "50000");
 
         item = OrderItem.builder()
                 .productId("CORP-1")

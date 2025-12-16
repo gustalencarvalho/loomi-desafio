@@ -5,16 +5,13 @@ import com.ecommerce.order_processing_system.domain.OrderItem;
 import com.ecommerce.order_processing_system.domain.policy.PhysicalPolicy;
 import com.ecommerce.order_processing_system.dto.ProductDTO;
 import com.ecommerce.order_processing_system.exception.OutOfStockException;
-import com.ecommerce.order_processing_system.kafka.KafkaEventPublisher;
+import com.ecommerce.order_processing_system.kafka.producer.KafkaEventPublisher;
 import com.ecommerce.order_processing_system.kafka.events.LowStockAlertEvent;
 import com.ecommerce.order_processing_system.service.ProductService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
-
-import java.time.LocalDateTime;
 
 import static com.ecommerce.order_processing_system.domain.OrderStatus.OUT_OF_STOCK;
 
@@ -66,7 +63,7 @@ public class PhysicalProductValidator implements ProductValidator {
 
         log.info("Quantity stock now after reserve {} ", newStock);
         physicalPolicy.paymentCarriedOut(order.getTotalAmount());
-        LocalDateTime deliveryDate = physicalPolicy.calculateDeliveryDate(order, product);
+        physicalPolicy.calculateDeliveryDate(order);
     }
 
 }

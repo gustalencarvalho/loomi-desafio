@@ -2,9 +2,12 @@ package com.ecommerce.order_processing_system.domain.service;
 
 import com.ecommerce.order_processing_system.domain.Order;
 import com.ecommerce.order_processing_system.domain.OrderItem;
+import com.ecommerce.order_processing_system.domain.OrderStatus;
 import com.ecommerce.order_processing_system.domain.policy.CorporatePolicy;
 import com.ecommerce.order_processing_system.exception.CreditLimitExceededException;
 import com.ecommerce.order_processing_system.exception.InvalidCorporateDataException;
+import com.ecommerce.order_processing_system.service.OrderService;
+import com.ecommerce.order_processing_system.service.ProductService;
 import com.ecommerce.order_processing_system.util.CnpjValidator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -30,7 +33,11 @@ public class CorporateProductValidator implements ProductValidator {
     @Value("${app.order.corporate-discount}")
     private String corporateDiscount;
 
+    @Value("${app.order.high-value-threshold}")
+    private String highValueThreshold;
+
     private final CorporatePolicy termsPayment;
+
 
     @Override
     public void validate(Order order, OrderItem item) {
@@ -58,8 +65,7 @@ public class CorporateProductValidator implements ProductValidator {
             throw new InvalidCorporateDataException(INVALID_CORPORATE_DATA);
         }
 
-
-        if (order.getTotalAmount().compareTo(new BigDecimal("100000")) > 0) {
+        if (order.getTotalAmount().compareTo(new BigDecimal(highValueThreshold)) > 0) {
             log.error("CREDIT_LIMIT_EXCEEDED for orderId={}", order.getOrderId());
             throw new CreditLimitExceededException(CREDIT_LIMIT_EXCEEDED);
         }
