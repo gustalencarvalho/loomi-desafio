@@ -7,7 +7,8 @@ import com.ecommerce.order_processing_system.domain.service.ProductValidator;
 import com.ecommerce.order_processing_system.domain.service.ProductValidatorFactory;
 import com.ecommerce.order_processing_system.exception.FraudDetectedException;
 import com.ecommerce.order_processing_system.exception.OrderNotFoundException;
-import com.ecommerce.order_processing_system.kafka.KafkaEventPublisher;
+import com.ecommerce.order_processing_system.kafka.events.OrderPendingApprovalEvent;
+import com.ecommerce.order_processing_system.kafka.producer.KafkaEventPublisher;
 import com.ecommerce.order_processing_system.kafka.events.OrderFailedEvent;
 import com.ecommerce.order_processing_system.kafka.events.OrderFraudEvent;
 import com.ecommerce.order_processing_system.kafka.events.OrderProcessedEvent;
@@ -31,11 +32,11 @@ public class OrderProcessingService {
     private final ProductValidatorFactory validatorFactory;
     private final KafkaEventPublisher eventPublisher;
 
-    @Value("${app.order.high-value-threshold}")
-    private BigDecimal highValueThreshold;
-
     @Value("${app.order.fraud-check-threshold}")
     private BigDecimal fraudCheckThreshold;
+
+    @Value("${app.order.corporate-approval-threshold:50000}")
+    private BigDecimal corporateApprovalThreshold;
 
     @Transactional
     public void process(String orderId) {
@@ -50,8 +51,18 @@ public class OrderProcessingService {
                 validator.validate(order, item);
             }
 
+            if (order.getTotalAmount().compareTo(corporateApprovalThreshold) > 0) {
+                order.setStatus(OrderStatus.PENDING_APPROVAL);
+                order.setFailureReason("High value order pending approval: " + order.getTotalAmount());
+                log.info("High value order pending approval: orderId={}, amount={}",
+                        order.getOrderId(), order.getTotalAmount());
+                eventPublisher.publishPendingApproval(OrderPendingApprovalEvent.of(orderId, order.getFailureReason()));
+                return;
+            }
+
             order.setStatus(OrderStatus.PROCESSED);
-            eventPublisher.publishProcessed(OrderProcessedEvent.of(orderId));
+            eventPublisher.publishProcessed(OrderProcessedEvent.of(order.getOrderId()));
+
         } catch (RuntimeException e) {
             order.setFailureReason(e.getMessage());
             order.setStatus(OrderStatus.FAILED);
@@ -61,10 +72,6 @@ public class OrderProcessingService {
 
     private void validateGlobal(Order order) {
         log.debug("Validating global rules for orderId={}, amount={}", order.getOrderId(), order.getTotalAmount());
-
-        if (order.getTotalAmount().compareTo(highValueThreshold) > 0) {
-            log.info("High value order detected: orderId={}, amount={}", order.getOrderId(), order.getTotalAmount());
-        }
 
         if (order.getTotalAmount().compareTo(fraudCheckThreshold) > 0) {
             log.info("Running probabilistic fraud check for orderId={}", order.getOrderId());
