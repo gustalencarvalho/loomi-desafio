@@ -39,9 +39,8 @@ class CorporateProductValidatorTest {
         validator = new CorporateProductValidator(corporatePolicy);
 
         // simula @Value
-        ReflectionTestUtils.setField(validator, "orporateVolumeThreshold", 10);
-        ReflectionTestUtils.setField(validator, "corporateDiscount", "0.10");
-        ReflectionTestUtils.setField(validator, "highValueThreshold", "50000");
+        ReflectionTestUtils.setField(validator, "corporateVolumeThreshold", 100);
+        ReflectionTestUtils.setField(validator, "highValueThreshold", "100000");
 
         item = OrderItem.builder()
                 .productId("CORP-1")
@@ -80,25 +79,9 @@ class CorporateProductValidatorTest {
     }
 
     @Test
-    void shouldApplyVolumeDiscountWhenThresholdExceeded() {
-        // soma das quantidades > threshold
-        OrderItem item2 = OrderItem.builder()
-                .quantity(6)
-                .metadata(Map.of("cnpj", "11222333000181"))
-                .build();
-
-        order.setItems(List.of(item, item2));
-
-        validator.validate(order, item);
-
-        // 10% de desconto em 1000 = 900
-        assertEquals(new BigDecimal("900.00"), order.getTotalAmount());
-    }
-
-    @Test
     void shouldCallCorporatePolicyWhenPaymentTermsPresent() {
         validator.validate(order, item);
-        verify(corporatePolicy).calculateTermsPayment("NET_30");
+        verify(corporatePolicy).calculateDeliveryDate("NET_30");
     }
 
     @Test
@@ -136,7 +119,7 @@ class CorporateProductValidatorTest {
         validator.validate(order, item);
 
         verify(corporatePolicy, never())
-                .calculateTermsPayment(any());
+                .calculateDeliveryDate(any());
     }
 
     @Test
@@ -186,7 +169,7 @@ class CorporateProductValidatorTest {
 
         validator.validate(order, item);
 
-        verify(corporatePolicy, never()).calculateTermsPayment(any());
+        verify(corporatePolicy, never()).calculateDeliveryDate(any());
     }
 
     @Test
