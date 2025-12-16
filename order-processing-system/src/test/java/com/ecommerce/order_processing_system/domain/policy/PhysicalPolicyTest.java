@@ -35,7 +35,7 @@ class PhysicalPolicyTest {
     @Test
     void shouldCalculateDeliveryDateWhenCreatedAtIsPresent() {
         LocalDateTime deliveryDate =
-                physicalPolicy.calculateDeliveryDate(order, product);
+                physicalPolicy.calculateDeliveryDate(order);
 
         assertNotNull(deliveryDate);
         assertTrue(deliveryDate.isAfter(order.getCreatedAt()));
@@ -54,7 +54,7 @@ class PhysicalPolicyTest {
         LocalDateTime before = LocalDateTime.now();
 
         LocalDateTime deliveryDate =
-                physicalPolicy.calculateDeliveryDate(order, product);
+                physicalPolicy.calculateDeliveryDate(order);
 
         LocalDateTime after = LocalDateTime.now();
 

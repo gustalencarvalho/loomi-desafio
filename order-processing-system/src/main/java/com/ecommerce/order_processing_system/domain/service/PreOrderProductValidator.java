@@ -2,19 +2,21 @@ package com.ecommerce.order_processing_system.domain.service;
 
 import com.ecommerce.order_processing_system.domain.Order;
 import com.ecommerce.order_processing_system.domain.OrderItem;
+import com.ecommerce.order_processing_system.domain.policy.PreOrderPolicy;
 import com.ecommerce.order_processing_system.exception.PreOrderSoldOutException;
 import com.ecommerce.order_processing_system.exception.ReleaseDatePassedException;
+import com.ecommerce.order_processing_system.exception.SlotLimitException;
 import com.ecommerce.order_processing_system.service.ProductService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
 import java.util.Objects;
 import java.util.Optional;
 
-import static com.ecommerce.order_processing_system.domain.OrderStatus.PRE_ORDER_SOLD_OUT;
-import static com.ecommerce.order_processing_system.domain.OrderStatus.RELEASE_DATE_PASSED;
+import static com.ecommerce.order_processing_system.domain.OrderStatus.*;
 
 @Slf4j
 @Component
@@ -22,6 +24,10 @@ import static com.ecommerce.order_processing_system.domain.OrderStatus.RELEASE_D
 public class PreOrderProductValidator implements ProductValidator {
 
     private final ProductService productService;
+    private final PreOrderPolicy preOrderPolicy;
+
+    @Value("${app.order.slot-limit}")
+    private Integer limitSlot;
 
     @Override
     public void validate(Order order, OrderItem item) {
@@ -48,6 +54,19 @@ public class PreOrderProductValidator implements ProductValidator {
             }
         });
 
+        order.getItems().stream()
+                .map(OrderItem::getMetadata)
+                .map(m -> m.get("preOrderSlots"))
+                .filter(Objects::nonNull)
+                .findFirst()
+                .map(Object::toString)
+                .map(Integer::parseInt)
+                .filter(slot -> slot < item.getQuantity())
+                .ifPresent(slot -> {
+                    log.warn("Slot limit exceeded: {}", slot);
+                    throw new SlotLimitException(PRE_ORDER_SOLD_OUT);
+                });
+
         int requestedQuantity = order.getItems().stream()
                 .filter(i -> i.getProductId().equals(item.getProductId()))
                 .mapToInt(OrderItem::getQuantity)
@@ -59,6 +78,6 @@ public class PreOrderProductValidator implements ProductValidator {
             throw new PreOrderSoldOutException(PRE_ORDER_SOLD_OUT);
         }
 
-        log.info("Your order has been scheduled for delivery on {} ", releaseDateRaw);
+        preOrderPolicy.calculateDeliveryDate(order);
     }
 }

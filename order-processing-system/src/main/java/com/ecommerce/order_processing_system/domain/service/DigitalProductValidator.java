@@ -36,7 +36,7 @@ public class DigitalProductValidator implements ProductValidator {
                         .filter(o -> o.getStatus() == PROCESSED)
                         .flatMap(o -> o.getItems().stream())
                         .anyMatch(i ->
-                                i.getProductId().equals(i.getProductId())
+                                i.getProductId().equals(item.getProductId())
                         );
 
         if (clientAlreadyOwnsProduct) {
