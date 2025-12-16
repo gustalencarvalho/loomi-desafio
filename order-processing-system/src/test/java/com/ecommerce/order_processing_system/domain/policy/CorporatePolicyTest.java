@@ -19,21 +19,21 @@ class CorporatePolicyTest {
     @Test
     void shouldAcceptNet30PaymentTerms() {
         assertDoesNotThrow(() ->
-                corporatePolicy.calculateTermsPayment("NET_30")
+                corporatePolicy.calculateDeliveryDate("NET_30")
         );
     }
 
     @Test
     void shouldAcceptNet60PaymentTerms() {
         assertDoesNotThrow(() ->
-                corporatePolicy.calculateTermsPayment("NET_60")
+                corporatePolicy.calculateDeliveryDate("NET_60")
         );
     }
 
     @Test
     void shouldAcceptNet90PaymentTerms() {
         assertDoesNotThrow(() ->
-                corporatePolicy.calculateTermsPayment("NET_90")
+                corporatePolicy.calculateDeliveryDate("NET_90")
         );
     }
 
@@ -41,7 +41,7 @@ class CorporatePolicyTest {
     void shouldThrowExceptionForInvalidPaymentTerms() {
         assertThrows(
                 InvalidPaymentTermsException.class,
-                () -> corporatePolicy.calculateTermsPayment("INVALID")
+                () -> corporatePolicy.calculateDeliveryDate("INVALID")
         );
     }
 }

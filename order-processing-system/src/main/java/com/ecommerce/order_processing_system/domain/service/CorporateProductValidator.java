@@ -2,12 +2,9 @@ package com.ecommerce.order_processing_system.domain.service;
 
 import com.ecommerce.order_processing_system.domain.Order;
 import com.ecommerce.order_processing_system.domain.OrderItem;
-import com.ecommerce.order_processing_system.domain.OrderStatus;
 import com.ecommerce.order_processing_system.domain.policy.CorporatePolicy;
 import com.ecommerce.order_processing_system.exception.CreditLimitExceededException;
 import com.ecommerce.order_processing_system.exception.InvalidCorporateDataException;
-import com.ecommerce.order_processing_system.service.OrderService;
-import com.ecommerce.order_processing_system.service.ProductService;
 import com.ecommerce.order_processing_system.util.CnpjValidator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -15,7 +12,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -28,16 +24,12 @@ import static com.ecommerce.order_processing_system.domain.OrderStatus.INVALID_C
 public class CorporateProductValidator implements ProductValidator {
 
     @Value("${app.order.corporate-volume-discount-threshold}")
-    private Integer orporateVolumeThreshold;
-
-    @Value("${app.order.corporate-discount}")
-    private String corporateDiscount;
+    private Integer corporateVolumeThreshold;
 
     @Value("${app.order.high-value-threshold}")
     private String highValueThreshold;
 
-    private final CorporatePolicy termsPayment;
-
+    private final CorporatePolicy corporatePolicy;
 
     @Override
     public void validate(Order order, OrderItem item) {
@@ -75,14 +67,8 @@ public class CorporateProductValidator implements ProductValidator {
                 .mapToInt(OrderItem::getQuantity)
                 .sum();
 
-        if (quantity > orporateVolumeThreshold) {
-            BigDecimal total = order.getTotalAmount();
-            BigDecimal discountRate = new BigDecimal(corporateDiscount);
-            BigDecimal discount = total.multiply(discountRate);
-            BigDecimal totalWithDiscount = total.subtract(discount).setScale(2, RoundingMode.HALF_UP);
-            order.setTotalAmount(totalWithDiscount);
-            log.info("Total without discount {} ", total);
-            log.info("orderId={} volume discount applied: {}", order.getOrderId(), totalWithDiscount);
+        if (order.getItems().stream().mapToInt(OrderItem::getQuantity).sum() > corporateVolumeThreshold) {
+            corporatePolicy.calculateDiscount(order);
         }
 
         Optional<String> paymentTerms = order.getItems().stream()
@@ -94,7 +80,7 @@ public class CorporateProductValidator implements ProductValidator {
                 .findFirst();
 
         paymentTerms.ifPresent(payment -> {
-            termsPayment.calculateTermsPayment(payment);
+            corporatePolicy.calculateDeliveryDate(payment);
         });
     }
 
