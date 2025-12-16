@@ -1,4 +1,4 @@
-package com.ecommerce.order_processing_system.kafka;
+package com.ecommerce.order_processing_system.kafka.producer;
 
 import com.ecommerce.order_processing_system.kafka.events.*;
 import lombok.RequiredArgsConstructor;
@@ -28,6 +28,9 @@ public class KafkaEventPublisher {
 
     @Value("${app.order.topic.scheguling-payment}")
     private String topicSchedulingPayment;
+
+    @Value("${app.order.topic.pending-approval}")
+    private String pendingApproval;
 
     @Value("${app.order.topic.failed}")
     private String topicFailed;
@@ -64,9 +67,16 @@ public class KafkaEventPublisher {
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void publishSchedulingPayment(OrderSchedulingPaymentEvent event) {
-        log.info("Publishing FraudAlert for orderId={} to topic={}",  event.getPayload().getOrderId(), topicSchedulingPayment);
+        log.info("Publishing SchedulingPayment for orderId={} to topic={}",  event.getPayload().getOrderId(), topicSchedulingPayment);
         log.debug("OrderSchedulingPaymentEvent payload={}", event);
         kafkaTemplate.send(topicSchedulingPayment, event.getPayload().getOrderId(), event);
+    }
+
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void publishPendingApproval(OrderPendingApprovalEvent event) {
+        log.info("Publishing PendingApproval for orderId={} to topic={}",  event.getPayload().getOrderId(), pendingApproval);
+        log.debug("PendingApproval payload={}", event);
+        kafkaTemplate.send(pendingApproval, event.getPayload().getOrderId(), event);
     }
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)

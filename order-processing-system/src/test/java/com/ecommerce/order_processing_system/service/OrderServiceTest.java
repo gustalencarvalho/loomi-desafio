@@ -8,7 +8,7 @@ import com.ecommerce.order_processing_system.dto.OrderResponse;
 import com.ecommerce.order_processing_system.dto.ProductDTO;
 import com.ecommerce.order_processing_system.exception.OrderNotFoundException;
 import com.ecommerce.order_processing_system.exception.OutOfStockException;
-import com.ecommerce.order_processing_system.kafka.KafkaEventPublisher;
+import com.ecommerce.order_processing_system.kafka.producer.KafkaEventPublisher;
 import com.ecommerce.order_processing_system.kafka.events.OrderCreatedEvent;
 import com.ecommerce.order_processing_system.repository.OrderRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -18,7 +18,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;

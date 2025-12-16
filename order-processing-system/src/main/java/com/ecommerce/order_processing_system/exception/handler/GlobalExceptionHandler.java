@@ -213,4 +213,13 @@ public class GlobalExceptionHandler {
         problem.setProperty("timestamp", Instant.now());
         return problem;
     }
+
+    @ExceptionHandler(SlotLimitException.class)
+    ProblemDetail handleSlotLimitException(final SlotLimitException ex, final HttpServletRequest request) {
+        ProblemDetail problem = ProblemDetail.forStatus(BAD_REQUEST);
+        problem.setType(URI.create(request.getContextPath()));
+        problem.setDetail(ex.getMessage());
+        problem.setProperty("timestamp", Instant.now());
+        return problem;
+    }
 }
